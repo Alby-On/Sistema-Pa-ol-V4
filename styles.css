@@ -64,7 +64,7 @@ a { color: var(--navy); }
 a:hover { color: var(--navy-dark); }
 b, strong { font-weight: 600; }
 
-.hidden { display: none !important; }
+.hidden, [hidden] { display: none !important; }
 .muted { color: var(--muted); }
 .num { font-variant-numeric: tabular-nums; }
 
@@ -165,7 +165,7 @@ label, .label {
 }
 
 input[type="text"], input[type="email"], input[type="password"], input[type="tel"],
-input[type="number"], input[type="date"], select, textarea {
+input[type="number"], input[type="date"], input[type="search"], select, textarea {
     display: block;
     width: 100%;
     min-height: 48px;
@@ -764,3 +764,48 @@ select:disabled, input:disabled { background: var(--surface-alt); color: var(--m
 .segmented button:hover { background: var(--navy-soft); color: var(--navy); }
 .segmented button.is-active { background: var(--navy); color: #fff; }
 @media print { .segmented { display: none; } }
+
+/* ---------- Gestor de solicitudes ---------- */
+.gestor-toolbar { display: grid; gap: 10px; margin-bottom: 16px; }
+.gestor-toolbar input[type="search"] { margin: 0; }
+.gestor-tabs { width: 100%; }
+.gestor-tabs button { flex: 1; }
+.tab-count { font-variant-numeric: tabular-nums; opacity: .8; margin-left: 2px; }
+
+.gestor .column h2 { justify-content: flex-start; }
+.gestor .column h2 .chip { margin-left: 4px; font-size: .8125rem; }
+.btn-mas { margin-top: 4px; }
+
+/* Teléfono: una lista a la vez, según la pestaña */
+.gestor .dashboard-container[data-tab-activa="pendientes"] .column[data-tab="entregadas"],
+.gestor .dashboard-container[data-tab-activa="entregadas"] .column[data-tab="pendientes"] { display: none; }
+.gestor .column > h2 { display: none; }
+
+@media (min-width: 900px) {
+    .gestor-toolbar { grid-template-columns: 1fr; max-width: 560px; }
+    .gestor-tabs { display: none; }
+    .gestor .dashboard-container .column { display: block !important; }
+    .gestor .column > h2 { display: flex; }
+    /* Cada columna se desplaza por separado: la página no crece hacia abajo */
+    .gestor .column-scroll {
+        max-height: calc(100vh - 230px);
+        overflow-y: auto;
+        padding-right: 6px;
+        overscroll-behavior: contain;
+    }
+}
+
+/* Tarjeta compacta */
+.request-card { padding: 14px 16px; margin-bottom: 10px; }
+.request-card.is-late { border-left-color: var(--danger); }
+.rc-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.rc-top strong { font-size: 1rem; }
+.rc-time { color: var(--muted); font-size: .8125rem; margin-right: auto; }
+.rc-user { font-weight: 600; margin: 0 0 2px; }
+.rc-meta { color: var(--muted); font-size: .875rem; margin: 0 0 8px; line-height: 1.4; }
+.rc-materiales { border-top: 1px solid var(--line); padding-top: 6px; }
+.rc-materiales summary { cursor: pointer; font-size: .875rem; font-weight: 600; color: var(--navy); padding: 4px 0; }
+.rc-materiales ul { list-style: none; margin: 4px 0 0; padding: 0; }
+.rc-materiales li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: .9375rem; border-bottom: 1px dashed var(--line); }
+.rc-materiales li:last-child { border-bottom: 0; }
+.request-card .actions { margin-top: 10px; }
