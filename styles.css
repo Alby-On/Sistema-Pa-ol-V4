@@ -737,3 +737,14 @@ input[type="date"] { -webkit-appearance: none; appearance: none; padding-right: 
     .heatmap thead th:first-child, .heatmap tbody th { width: 52px; }
     .hm-fin { display: none; }
 }
+
+/* Solicitud pendiente: aviso, materiales ya pedidos y menú */
+.notice-pending { background: var(--pending-bg); border-left-color: var(--pending-mark); color: var(--ink); }
+.notice-pending p { margin-bottom: 4px; }
+.notice-pending a { font-weight: 600; }
+.ya-solicitados { list-style: none; margin: 0 0 8px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.ya-solicitados li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: .9375rem; }
+.ya-solicitados li:last-child { border-bottom: 0; }
+select:disabled, input:disabled { background: var(--surface-alt); color: var(--muted); cursor: not-allowed; }
+.menu-list button.is-pending { box-shadow: inset 4px 0 0 var(--pending-mark); }
+.menu-list button.is-pending .item-desc { color: var(--pending); font-weight: 500; }

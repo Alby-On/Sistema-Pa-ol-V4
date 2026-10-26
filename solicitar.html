@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26g">
+    <link rel="stylesheet" href="styles.css?v=2026-10-26h">
 
 </head>
 <body>
@@ -21,6 +21,7 @@
 </header>
 <main class="page">
     <section class="panel box">
+        <div id="avisoPendiente" class="notice notice-pending" hidden></div>
         <label for="docente" style="margin-top:0">Docente a cargo</label>
         <select id="docente">
         <option value="">Selecciona un docente</option>
@@ -52,7 +53,11 @@
             <input type="text" id="asignatura" placeholder="Ej: Instalaciones Eléctricas en Baja Tensión" autocomplete="off">
         </div>
 
-        <h3 class="section-title">Materiales</h3>
+        <div id="yaSolicitados" hidden>
+            <h3 class="section-title">Ya solicitados</h3>
+            <ul id="listaYaSolicitados" class="ya-solicitados"></ul>
+        </div>
+        <h3 class="section-title" id="tituloMateriales">Materiales</h3>
         <div class="table-wrap table-open">
             <table id="tabla">
                 <thead>
@@ -81,7 +86,7 @@
     </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26g"></script>
+<script src="supabase.js?v=2026-10-26h"></script>
 <script>
 /* 🔗 Conexión a Supabase */
 
@@ -279,6 +284,64 @@ function removeRow() {
 }
 
 /* 📤 Enviar Solicitud (CORREGIDA) */
+/* -------------------------------------------------------------------
+    SOLICITUD PENDIENTE
+    Un alumno con una solicitud sin entregar no puede crear otra,
+    pero sí agregarle materiales. Los administradores no tienen esta restricción.
+------------------------------------------------------------------- */
+let solicitudPendiente = null;
+
+function textoBotonEnviar() {
+    return solicitudPendiente ? `Agregar a la solicitud #${solicitudPendiente.id}` : "Enviar solicitud";
+}
+
+async function buscarPendiente() {
+    if (!user || user.rol === "admin") return null;
+    const { data, error } = await supabaseClient
+        .from("solicitudes")
+        .select("id, docente, asignatura, fecha_solicitud")
+        .eq("email", user.email)
+        .eq("estado", "Pendiente")
+        .order("fecha_solicitud", { ascending: false })
+        .limit(1);
+    if (error) { console.error("Error al revisar solicitudes pendientes:", error); return null; }
+    return (data && data[0]) || null;
+}
+
+async function activarModoAgregar() {
+    solicitudPendiente = await buscarPendiente();
+    if (!solicitudPendiente) return;
+    const s = solicitudPendiente;
+
+    // Docente y asignatura quedan fijos: son los de la solicitud pendiente
+    const selDocente = document.getElementById("docente");
+    if (![...selDocente.options].some(o => o.value === s.docente)) selDocente.add(new Option(s.docente, s.docente));
+    selDocente.value = s.docente;
+    selDocente.disabled = true;
+    const inpAsignatura = document.getElementById("asignatura");
+    inpAsignatura.value = s.asignatura;
+    inpAsignatura.disabled = true;
+
+    const aviso = document.getElementById("avisoPendiente");
+    aviso.hidden = false;
+    aviso.innerHTML = `<p><b>Tienes la solicitud #${s.id} pendiente de entrega.</b></p>
+        <p>No puedes hacer una solicitud nueva hasta entregarla, pero sí puedes agregarle lo que te falte.</p>
+        <p><a href="entregar.html">Ir a entregar materiales</a></p>`;
+
+    const { data: existentes } = await supabaseClient
+        .from("materiales_solicitados")
+        .select("material, cantidad")
+        .eq("id_solicitud", s.id);
+    if (existentes && existentes.length) {
+        document.getElementById("listaYaSolicitados").innerHTML = existentes
+            .map(m => `<li><span>${m.material}</span><span class="num muted">× ${m.cantidad}</span></li>`).join("");
+        document.getElementById("yaSolicitados").hidden = false;
+    }
+
+    document.getElementById("tituloMateriales").textContent = "Materiales a agregar";
+    document.querySelector(".btnEnviar").innerText = textoBotonEnviar();
+}
+
 async function enviar() {
     const btn = document.querySelector(".btnEnviar");
     btn.disabled = true;
@@ -309,6 +372,34 @@ async function enviar() {
     });
 
     if (materiales.length === 0) return finishError("Debe ingresar al menos un material válido.");
+
+    // Revisar de nuevo justo antes de guardar, por si la solicitud pendiente
+    // se entregó o se creó otra desde otro dispositivo mientras la página estaba abierta.
+    const pendienteActual = await buscarPendiente();
+    if ((pendienteActual?.id ?? null) !== (solicitudPendiente?.id ?? null)) {
+        alert(pendienteActual
+            ? `Tienes la solicitud #${pendienteActual.id} pendiente. La página se actualizará para que agregues los materiales a esa solicitud.`
+            : "Tu solicitud pendiente ya fue entregada. La página se actualizará para que hagas una solicitud nueva.");
+        window.location.reload();
+        return;
+    }
+
+    if (solicitudPendiente) {
+        try {
+            for (const m of materiales) {
+                const { error: materialError } = await supabaseClient
+                    .from("materiales_solicitados")
+                    .insert([{ id_solicitud: solicitudPendiente.id, material: m.material, cantidad: m.cantidad }]);
+                if (materialError) throw materialError;
+            }
+            alert(`✅ Materiales agregados a la solicitud #${solicitudPendiente.id}.`);
+            window.location.href = "menu.html";
+        } catch (err) {
+            console.error(err);
+            finishError("Error al agregar: " + err.message);
+        }
+        return;
+    }
 
     try {
         /* 1️⃣ Insertar solicitud */
@@ -350,7 +441,7 @@ function finishError(msg) {
     alert("❌ " + msg);
     const btn = document.querySelector(".btnEnviar");
     btn.disabled = false;
-    btn.innerText = "Enviar solicitud";
+    btn.innerText = textoBotonEnviar();
 }
 
 /* -------------------------------------------------------------------
@@ -398,6 +489,8 @@ document.addEventListener("DOMContentLoaded", () => {
             enableAutocomplete(inputMaterial, materialesLista);
         }
     }
+
+    activarModoAgregar();
 });
 </script>
 </body>
