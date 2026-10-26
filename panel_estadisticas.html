@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <title>Estadísticas de Uso del Pañol</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
     <style>
         :root {
             --color-primary: #173753; /* Azul oscuro institucional */
@@ -212,25 +213,7 @@
 
     </div>
 
-</body>
-</html>
-    
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-   
 <script>
-/* ==============================
-   CONFIGURACIÓN SUPABASE
-================================ */
-
-const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
-
-if (!window.supabaseClient) {
-    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
-const supabaseClient = window.supabaseClient;
-
 /* ==============================
    COLORES
 ================================ */
@@ -413,6 +396,5 @@ document.addEventListener("DOMContentLoaded", () => {
     setupCommentListener();
 });
 </script>
-    
 </body>
 </html>

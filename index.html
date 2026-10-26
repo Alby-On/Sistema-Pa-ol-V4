@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Solicitud de Materiales - Inicio</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
 
     <style>
         /* Variables de Color (Para un look formal y fácil de modificar) */
@@ -312,10 +313,6 @@
 // ----------------------------------------
 // CONFIGURAR SUPABASE
 // ----------------------------------------
-const supabaseClient = supabase.createClient(
-    "https://jwcgiuhdugjunndfpdjr.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY"
-);
 
 // ----------------------------------------
 // REDIRECCIÓN DESPUÉS DE CONFIRMAR EMAIL
@@ -418,11 +415,8 @@ async function registrar() {
 
     const rutVal = validarRutCompleto(rut);
     if (!rutVal.ok) {
-        mensaje.textContent = `❌ ${rutVal.msg}`;
-        mensaje.style.color = "red";
-        mensaje.style.backgroundColor = "#ffdddd";
-        desbloquearBotonRegistro();   // <-- importante
-    return;
+        showError(rutVal.msg);
+        return;
     }
 
     if (!/^\+569\d{8}$/.test(telefono)) {
@@ -463,12 +457,8 @@ async function registrar() {
 // ----------------------------------------
 // FUNCIÓN LOGIN (Modificada para insertar perfil tras Auth)
 // ----------------------------------------
-function validarRutFormatoYDigito(rut) {
-    return validarRutCompleto(rut).ok;
-}
-    
-function bloquearBotonLogin(texto = "Ingresando...") {
-    const btn = document.getElementById("btnLogin");
+function bloquearBoton(id, texto) {
+    const btn = document.getElementById(id);
     btn.disabled = true;
     btn.dataset.textoOriginal = btn.textContent;
     btn.textContent = texto;
@@ -476,29 +466,18 @@ function bloquearBotonLogin(texto = "Ingresando...") {
     btn.style.cursor = "not-allowed";
 }
 
-function desbloquearBotonLogin() {
-    const btn = document.getElementById("btnLogin");
+function desbloquearBoton(id, textoPorDefecto) {
+    const btn = document.getElementById(id);
     btn.disabled = false;
-    btn.textContent = btn.dataset.textoOriginal || "Ingresar";
+    btn.textContent = btn.dataset.textoOriginal || textoPorDefecto;
     btn.style.opacity = "1";
     btn.style.cursor = "pointer";
 }
-function bloquearBotonRegistro(texto = "Registrando...") {
-    const btn = document.getElementById("btnRegister");
-    btn.disabled = true;
-    btn.dataset.textoOriginal = btn.textContent;
-    btn.textContent = texto;
-    btn.style.opacity = "0.7";
-    btn.style.cursor = "not-allowed";
-}
+const bloquearBotonLogin = () => bloquearBoton("btnLogin", "Ingresando...");
+const desbloquearBotonLogin = () => desbloquearBoton("btnLogin", "Ingresar");
+const bloquearBotonRegistro = () => bloquearBoton("btnRegister", "Registrando...");
+const desbloquearBotonRegistro = () => desbloquearBoton("btnRegister", "Crear Cuenta");
 
-function desbloquearBotonRegistro() {
-    const btn = document.getElementById("btnRegister");
-    btn.disabled = false;
-    btn.textContent = btn.dataset.textoOriginal || "Crear Cuenta";
-    btn.style.opacity = "1";
-    btn.style.cursor = "pointer";
-}
 async function login() {
     bloquearBotonLogin(); // ⛔ evita spam
 
@@ -530,7 +509,7 @@ async function login() {
     let emailParaLogin = input;
 
     if (!input.includes("@")) {
-        if (!validarRutFormatoYDigito(input)) {
+        if (!validarRutCompleto(input).ok) {
             showError("RUT inválido.");
             return;
         }
