@@ -435,7 +435,7 @@ async function registrar() {
         email, 
         password: pass,
         options: {
-            emailRedirectTo: "https://alby-on.github.io/Sistema_panol_v3/index.html",
+            emailRedirectTo: new URL("index.html", window.location.href).href, // misma carpeta donde está publicada esta versión
             data: { 
                 full_name: nombre,
                 rut_val: rut,

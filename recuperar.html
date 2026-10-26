@@ -153,7 +153,7 @@ async function enviarCorreo() {
     const { data, error } = await supabaseClient.auth.signInWithOtp({
         email: email,
         options: {
-            emailRedirectTo: "https://alby-on.github.io/Sistema_panol_v3/reset.html",
+            emailRedirectTo: new URL("reset.html", window.location.href).href, // misma carpeta donde está publicada esta versión
             shouldCreateUser: false,
             flowType: "recovery"    // 🔥 Clave para reset password
         }
