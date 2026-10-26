@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Solicitud de Materiales - Inicio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* Variables de Color (Para un look formal y fácil de modificar) */
+        :root {
+            --color-primary: #004d99; /* Azul marino/institucional más oscuro */
+            --color-secondary: #28a745; /* Verde para éxito */
+            --color-background: #eef1f5; /* Fondo más claro y suave */
+            --color-card: #ffffff; /* Fondo de las cajas */
+            --color-text: #333333; /* Texto oscuro */
+            --color-border: #cccccc; /* Borde de inputs */
+            --color-error: #dc3545; /* Rojo para errores */
+        }
+
+        /* Estilos Generales */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Fuente más moderna */
+            background: var(--color-background);
+            margin: 0;
+            padding: 0;
+            color: var(--color-text);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alineación superior para mejor visibilidad en móvil */
+            min-height: 100vh;
+        }
+
+        /* Caja Principal (Card) */
+        .box {
+            background: var(--color-card);
+            padding: 30px; /* Más espacio interior */
+            width: 100%; /* Ocupa todo el ancho disponible en móviles */
+            max-width: 420px; /* Límite para pantallas grandes */
+            margin: 20px 15px; /* Margen para evitar tocar los bordes del móvil */
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Sombra más suave y profunda */
+            box-sizing: border-box; /* Asegura que el padding no añada ancho extra */
+            transition: transform 0.3s ease; /* Pequeña transición al cargar */
+        }
+
+        /* Encabezados */
+        h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: var(--color-primary);
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--color-primary); /* Línea de separación formal */
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            text-align: center;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            color: var(--color-text);
+            font-size: 1.2em;
+        }
+
+        /* Inputs y Selects */
+        input, select {
+            width: 100%;
+            padding: 14px; /* Más padding para facilitar el toque en móvil */
+            margin: 10px 0 18px;
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+            font-size: 1em;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+            background-color: #f9f9f9;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--color-primary);
+            outline: none;
+            box-shadow: 0 0 5px rgba(0, 77, 153, 0.2);
+        }
+
+        /* Botones */
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.3s, opacity 0.3s;
+            text-transform: uppercase; /* Formaliza el texto del botón */
+        }
+
+        button:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: var(--color-card);
+        }
+
+        .btn-success {
+            background: var(--color-secondary);
+            color: var(--color-card);
+        }
+
+        /* Elementos de Estado y Mensajes */
+        .hidden {
+            display: none !important; /* Uso de !important para asegurar ocultación */
+        }
+
+        a {
+            color: var(--color-primary);
+            cursor: pointer;
+            text-decoration: none; /* Quitamos el subrayado por defecto */
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 5px;
+            transition: color 0.3s;
+        }
+        
+        a:hover {
+            color: #0066cc;
+            text-decoration: underline; /* Lo añadimos al pasar el ratón */
+        }
+
+        .error {
+            color: var(--color-error);
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            padding: 5px;
+            border: 1px dashed var(--color-error);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        /* Listas (Consideraciones) */
+        ul {
+            padding-left: 20px;
+            margin-top: 0;
+            list-style-type: '👉 '; /* Viñeta más visual */
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        #mensaje, #loginMsg {
+            font-weight: 600;
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        /* Ajustes Específicos para Móviles (Aunque .box ya es responsive, esto afina) */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px 0; /* Menos padding en los bordes del cuerpo */
+            }
+            .box {
+                margin: 10px 10px;
+                padding: 20px;
+            }
+            h2 {
+                font-size: 1.6em;
+            }
+            input, select, button {
+                padding: 12px;
+            }
+        }
+        /* Nuevos estilos para los campos de contraseña */
+.password-container {
+    position: relative; /* Contenedor para posicionar el ojo */
+    margin-bottom: 18px; /* Espacio para separar del siguiente elemento */
+}
+
+/* El input dentro del contenedor */
+.password-container input {
+    margin: 0; /* Remover el margen por defecto para que el contenedor lo maneje */
+}
+
+/* Estilos para el icono de mostrar/ocultar */
+.toggle-password {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    user-select: none; /* Evita que se seleccione el texto del icono */
+    color: var(--color-border);
+    font-size: 1.2em;
+    transition: color 0.3s;
+}
+
+.toggle-password:hover {
+    color: var(--color-primary);
+}
+
+/* Estilo para el mensaje de coincidencia de contraseña */
+#password-match-message {
+    font-size: 0.9em;
+    font-weight: 600;
+    margin-top: -10px; /* Acercarlo al input */
+    margin-bottom: 15px;
+    padding-left: 5px;
+}
+
+/* Resaltar inputs cuando no coinciden */
+.password-mismatch {
+    border-color: var(--color-error) !important;
+    box-shadow: 0 0 5px rgba(220, 53, 69, 0.4) !important;
+}
+.login-info {
+    background-color: #e8f0fe;
+    border-left: 5px solid var(--color-primary);
+    color: #003366;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    border-radius: 6px;
+    font-size: 0.95em;
+    line-height: 1.4;
+    text-align: left;
+}
+    </style>
+</head>
+<body>
+
+<div class="box" id="welcomeBox">
+    <h2>Bienvenido(a) 🛠️</h2>
+    <p style="text-align:center;">Esta es la plataforma de <b>solicitud de materiales e insumos</b> habilitada por <b>pañol del área de Electricidad, Automatización y Robótica</b>.</p>
+    <h3>📝 Consideraciones Importantes:</h3>
+    <ul>
+        <li>Todo material facilitado debe **regresar en las mismas condiciones**.</li>
+        <li>Ante dudas, consulte al Director o Coordinador de carrera.</li>
+    </ul>
+    <button class="btn-primary" onclick="showLogin()">Iniciar Sesión</button>
+    <button class="btn-success" onclick="showRegister()">Registrarse</button>
+</div>
+
+<div class="box hidden" id="loginBox">
+    <h2>🔑 Iniciar Sesión</h2>
+    <div class="login-info">
+    ℹ️ <b>Importante:</b><br>
+    Si es tu <b>primer inicio de sesión</b>, debes ingresar primero tu 
+    <b>correo electrónico</b>. <br>
+    Una vez iniciado sesión, podrás ingresar utilizando tu <b>RUT</b>.
+</div>
+
+    <input type="email" placeholder="📧 Correo o RUT" id="loginEmail">
+<div class="password-container">
+    <input type="password" placeholder="🔒 Contraseña" id="loginPass">
+    <span class="toggle-password" onclick="toggleVisibility('loginPass', this)">👁️</span>
+</div>
+    <button class="btn-primary" id="btnLogin" onclick="login()">Ingresar</button>
+    
+    <p id="loginMsg"></p>
+    
+    <a href="recuperar.html" class="forgot-link">¿Olvidaste tu contraseña?</a>
+    
+    <p class="register-link">
+        <a onclick="showRegister()">¿No tienes cuenta? Regístrate aquí</a>
+    </p>
+    
+    <a href="menu.html" class="btn-volver">⬅ Volver al Menú</a>
+</div>
+
+<div class="box hidden" id="registerBox">
+    <h2>📝 Registro de Usuario</h2>
+    <input type="text" id="regNombre" placeholder="👤 Nombre Completo">
+    <input type="text" id="regRut" placeholder="💳 RUT (Ej: 12345678-5)">
+    <p id="rutError" class="error"></p>
+
+    <select id="regCarrera">
+        <option value="">🏫 Seleccione una carrera</option>
+        <option>Ingeniería Eléctrica</option>
+        <option>Técnico de nivel superior en Electricidad Industrial</option>
+        <option>Ingeniería en Automatización y Robótica</option>
+        <option>Técnico de nivel superior en Automatización y Robótica</option>
+        <option>Ingeniería en Mecatrónica</option>
+        <option>Técnico de nivel superior en Mecatrónica</option>
+        <option>Área Mecánica</option>
+        <option>Otras Áreas</option>
+    </select>
+
+    <input type="tel" id="regTelefono" placeholder="📱 Teléfono (Ej: +56911111111)">
+    <input type="email" id="regEmail" placeholder="📧 Correo Electrónico">
+<div class="password-container">
+    <input type="password" id="regPass" placeholder="🔒 Crea tu Contraseña" onkeyup="checkPasswordMatch()">
+    <span class="toggle-password" onclick="toggleVisibility('regPass', this)">👁️</span>
+</div>
+
+<div class="password-container">
+    <input type="password" id="regConfirmPass" placeholder="✅ Confirma tu Contraseña" onkeyup="checkPasswordMatch()">
+    <span class="toggle-password" onclick="toggleVisibility('regConfirmPass', this)">👁️</span>
+</div>
+<p id="password-match-message"></p>
+
+    <button class="btn-success" id="btnRegister" onclick="registrar()"> Crear Cuenta </button>
+    
+    <p id="mensaje"></p>
+    <p style="text-align:center;"><a onclick="showLogin()">Ya tengo cuenta, Iniciar Sesión</a></p>
+    <p style="text-align:center;"><a onclick="showWelcome()">Volver a la Bienvenida</a></p>
+</div>
+    
+<script>
+// ----------------------------------------
+// CONFIGURAR SUPABASE
+// ----------------------------------------
+const supabaseClient = supabase.createClient(
+    "https://jwcgiuhdugjunndfpdjr.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY"
+);
+
+// ----------------------------------------
+// REDIRECCIÓN DESPUÉS DE CONFIRMAR EMAIL
+// ----------------------------------------
+async function handleRedirect() {
+    const hash = window.location.hash;
+    if (hash.includes("access_token")) {
+        const params = new URLSearchParams(hash.slice(1));
+        const access_token = params.get("access_token");
+        const refresh_token = params.get("refresh_token");
+
+        await supabaseClient.auth.setSession({ access_token, refresh_token });
+        window.location.href = "menu.html";
+    }
+}
+handleRedirect();
+
+// ----------------------------------------
+// NAVEGACIÓN
+// ----------------------------------------
+function hideAll() {
+    welcomeBox.classList.add("hidden");
+    loginBox.classList.add("hidden");
+    registerBox.classList.add("hidden");
+}
+function showWelcome(){ hideAll(); welcomeBox.classList.remove("hidden"); }
+function showLogin(){ hideAll(); loginBox.classList.remove("hidden"); }
+function showRegister(){ hideAll(); registerBox.classList.remove("hidden"); }
+
+// ----------------------------------------
+// VALIDACIÓN RUT
+// ----------------------------------------
+function limpiarRut(rut){ return rut.replace(/\./g,'').replace(/\s/g,'').toUpperCase(); }
+function dvT(rut){ let M=0,S=1; for(;rut;rut=Math.floor(rut/10)) S=(S+rut%10*(9-M++%6))%11; return S?S-1:'K'; }
+function validarRutCompleto(rutCompleto){
+    if (!rutCompleto)
+        return { ok:false, msg:"Debe ingresar un RUT." };
+
+    const r = limpiarRut(rutCompleto);
+
+    if (!r.includes('-'))
+        return { ok:false, msg:"El RUT debe contener guion (Ej: 12345678-5)." };
+
+    const [num, dv] = r.split('-');
+
+    if (!/^\d+$/.test(num))
+        return { ok:false, msg:"La parte numérica del RUT debe contener solo números." };
+
+    const dvCorrecto = dvT(parseInt(num,10)).toString().toUpperCase();
+    const dvIngresado = dv.toUpperCase();
+
+    if (dvCorrecto !== dvIngresado)
+        return { ok:false, msg:"El RUT ingresado no es válido (dígito verificador incorrecto)." };
+
+    return { ok:true };
+}
+// ----------------------------------------
+// FUNCIÓN REGISTRAR (Modificada para usar Metadatos)
+// ----------------------------------------
+async function registrar() {
+    bloquearBotonRegistro(); // ⛔ evita spam
+
+    const mensaje = document.getElementById("mensaje");
+    const rutError = document.getElementById("rutError");
+
+    const nombre = regNombre.value.trim();
+    const rut = regRut.value.trim();
+    const carrera = regCarrera.value;
+    const telefono = regTelefono.value.trim();
+    const email = regEmail.value.trim();
+    const pass = regPass.value.trim();
+    const confirmPass = regConfirmPass.value.trim();
+
+    const showError = (text) => {
+    mensaje.textContent = `❌ ${text}`;
+    mensaje.style.color = "red";
+    mensaje.style.backgroundColor = "#ffdddd";
+    desbloquearBotonRegistro(); // ✅ liberar botón
+    };
+
+    const showSuccess = (text) => {
+        mensaje.textContent = `✅ ${text}`;
+        mensaje.style.color = "green";
+        mensaje.style.backgroundColor = "#ddffdd";
+    };
+
+    mensaje.textContent = "";
+    mensaje.style.backgroundColor = "transparent";
+    rutError.textContent = "";
+
+    if (!nombre || !rut || !carrera || !telefono || !email || !pass || !confirmPass) {
+        showError("Complete todos los campos.");
+        return;
+    }
+
+    if (!checkPasswordMatch()) {
+        showError("Las contraseñas no coinciden.");
+        return;
+    }
+
+    const rutVal = validarRutCompleto(rut);
+    if (!rutVal.ok) {
+        mensaje.textContent = `❌ ${rutVal.msg}`;
+        mensaje.style.color = "red";
+        mensaje.style.backgroundColor = "#ffdddd";
+        desbloquearBotonRegistro();   // <-- importante
+    return;
+    }
+
+    if (!/^\+569\d{8}$/.test(telefono)) {
+        showError("Teléfono inválido. Use +569XXXXXXXX");
+        return;
+    }
+
+    const dominiosPermitidos = ["@gmail.com", "@hotmail.com", "@outlook.com", "@icloud.com", "@inacapmail.cl", "@inacap.cl"];
+    if (!dominiosPermitidos.some(d => email.endsWith(d))) {
+        showError("El correo ingresado no es válido o no está permitido.");
+        return;
+    }
+
+    // CREAR EN AUTH CON METADATOS (No insertamos en la tabla aún)
+    const { error: e1 } = await supabaseClient.auth.signUp({ 
+        email, 
+        password: pass,
+        options: {
+            emailRedirectTo: "https://alby-on.github.io/Sistema_panol_v3/index.html",
+            data: { 
+                full_name: nombre,
+                rut_val: rut,
+                carrera_val: carrera,
+                telefono_val: telefono
+            }
+        }
+    });
+
+
+    if (e1) {
+        showError(e1.message.includes("already registered") ? "El correo ya está registrado." : `Error: ${e1.message}`);
+        return;
+    }
+
+    showSuccess("Registro exitoso. Revisa tu correo para confirmar. Tu perfil se activará al iniciar sesión.");
+}
+
+// ----------------------------------------
+// FUNCIÓN LOGIN (Modificada para insertar perfil tras Auth)
+// ----------------------------------------
+function validarRutFormatoYDigito(rut) {
+    return validarRutCompleto(rut).ok;
+}
+    
+function bloquearBotonLogin(texto = "Ingresando...") {
+    const btn = document.getElementById("btnLogin");
+    btn.disabled = true;
+    btn.dataset.textoOriginal = btn.textContent;
+    btn.textContent = texto;
+    btn.style.opacity = "0.7";
+    btn.style.cursor = "not-allowed";
+}
+
+function desbloquearBotonLogin() {
+    const btn = document.getElementById("btnLogin");
+    btn.disabled = false;
+    btn.textContent = btn.dataset.textoOriginal || "Ingresar";
+    btn.style.opacity = "1";
+    btn.style.cursor = "pointer";
+}
+function bloquearBotonRegistro(texto = "Registrando...") {
+    const btn = document.getElementById("btnRegister");
+    btn.disabled = true;
+    btn.dataset.textoOriginal = btn.textContent;
+    btn.textContent = texto;
+    btn.style.opacity = "0.7";
+    btn.style.cursor = "not-allowed";
+}
+
+function desbloquearBotonRegistro() {
+    const btn = document.getElementById("btnRegister");
+    btn.disabled = false;
+    btn.textContent = btn.dataset.textoOriginal || "Crear Cuenta";
+    btn.style.opacity = "1";
+    btn.style.cursor = "pointer";
+}
+async function login() {
+    bloquearBotonLogin(); // ⛔ evita spam
+
+    const input = loginEmail.value.trim();
+    const pass = loginPass.value.trim();
+    const msg = document.getElementById("loginMsg");
+
+    const showError = (text) => {
+        msg.textContent = `❌ ${text}`;
+        msg.style.color = "red";
+        msg.style.backgroundColor = "#ffdddd";
+        desbloquearBotonLogin(); // ✅ liberar botón
+    };
+
+    const showSuccess = (text) => {
+        msg.textContent = `✅ ${text}`;
+        msg.style.color = "green";
+        msg.style.backgroundColor = "#ddffdd";
+    };
+
+    msg.textContent = "";
+    msg.style.backgroundColor = "transparent";
+
+    if (!input || !pass) {
+        showError("Complete todos los campos.");
+        return;
+    }
+
+    let emailParaLogin = input;
+
+    if (!input.includes("@")) {
+        if (!validarRutFormatoYDigito(input)) {
+            showError("RUT inválido.");
+            return;
+        }
+
+        const { data, error } = await supabaseClient.rpc(
+            "buscar_email_por_rut",
+            { rut_input: input }
+        );
+
+        if (error || !data) {
+            showError("El RUT no está registrado.");
+            return;
+        }
+
+        emailParaLogin = data;
+    }
+
+    const { data: authData, error } =
+        await supabaseClient.auth.signInWithPassword({
+            email: emailParaLogin,
+            password: pass
+        });
+
+    if (error) {
+        showError(
+            error.message.includes("Email not confirmed")
+                ? "Debes confirmar tu correo antes de entrar."
+                : "Credenciales incorrectas."
+        );
+        return;
+    }
+
+    let { data: perfil } = await supabaseClient
+        .from("usuarios")
+        .select("*")
+        .eq("email", emailParaLogin)
+        .single();
+
+    if (!perfil) {
+        const meta = authData.user.user_metadata;
+        const { data: nuevoPerfil, error: e2 } =
+            await supabaseClient.from("usuarios")
+                .insert([{
+                    nombre: meta.full_name,
+                    rut: meta.rut_val,
+                    carrera: meta.carrera_val,
+                    telefono: meta.telefono_val,
+                    email: emailParaLogin
+                }])
+                .select()
+                .single();
+
+        if (e2) {
+            showError("Error al activar perfil.");
+            return;
+        }
+        perfil = nuevoPerfil;
+    }
+
+    localStorage.setItem("currentUser", JSON.stringify(perfil));
+    showSuccess(`Bienvenido, ${perfil.nombre}`);
+
+    // ⏳ NO desbloqueamos: redirigimos
+    setTimeout(() => window.location.href = "menu.html", 1200);
+}
+
+
+showWelcome();
+
+// ----------------------------------------
+// VISIBILIDAD DE CONTRASEÑAS
+// ----------------------------------------
+function toggleVisibility(fieldId, toggleElement) {
+    const field = document.getElementById(fieldId);
+    field.type = field.type === "password" ? "text" : "password";
+    toggleElement.textContent = field.type === "password" ? "👁️" : "🔒";
+}
+
+function checkPasswordMatch() {
+    const pass = regPass;
+    const confirmPass = regConfirmPass;
+    const msg = document.getElementById("password-match-message");
+
+    msg.textContent = "";
+    pass.classList.remove("password-mismatch");
+    confirmPass.classList.remove("password-mismatch");
+
+    if (confirmPass.value.trim().length > 0) {
+        if (pass.value !== confirmPass.value) {
+            msg.textContent = "❌ Las contraseñas no coinciden.";
+            msg.style.color = "var(--color-error)";
+            pass.classList.add("password-mismatch");
+            confirmPass.classList.add("password-mismatch");
+            return false;
+        } else {
+            msg.textContent = "✅ Contraseñas coinciden.";
+            msg.style.color = "var(--color-secondary)";
+            return true;
+        }
+    }
+    return true;
+}
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recuperar Contraseña</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* Variables de Color (Consistencia Institucional) */
+        :root {
+            --color-primary: #004d99; /* Azul marino/institucional */
+            --color-background: #eef1f5; /* Fondo claro y suave */
+            --color-card: #ffffff; /* Fondo de la tarjeta */
+            --color-text: #333333;
+            --color-border: #cccccc;
+            --color-success: #28a745;
+            --color-danger: #dc3545;
+        }
+
+        /* ---- ESTILO GENERAL ---- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--color-background);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            background: var(--color-card);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 380px; /* Ancho un poco más generoso */
+            text-align: center;
+            border: 1px solid #d0d5dd;
+        }
+        
+        h2 {
+            color: var(--color-primary);
+            margin-bottom: 25px;
+            font-size: 1.6em;
+            font-weight: 600;
+        }
+        
+        /* ---- INPUTS ---- */
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+            box-sizing: border-box;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            border-color: var(--color-primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 77, 153, 0.2);
+        }
+        
+        /* ---- BOTÓN ---- */
+        button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 12px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background: #003a73;
+        }
+        
+        /* ---- MENSAJE DE ESTADO ---- */
+        #msg {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 0.9em;
+            font-weight: 500;
+            border-radius: 4px;
+            min-height: 30px;
+        }
+
+        /* Estilos específicos para mensajes */
+        .msg-error {
+            color: var(--color-danger);
+            background: #ffe5e5;
+            border: 1px solid #ffb8b8;
+        }
+        
+        .msg-success {
+            color: var(--color-success);
+            background: #e6ffe6;
+            border: 1px solid #b8ffb8;
+        }
+
+        /* Responsive */
+        @media (max-width: 450px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>🔒 Recuperar Contraseña</h2>
+
+        <input type="email" id="email" placeholder="Correo electrónico registrado" />
+
+        <button onclick="enviarCorreo()">Enviar enlace de recuperación</button>
+
+        <p id="msg"></p>
+    </div>
+
+<script>
+const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function enviarCorreo() {
+    const email = document.getElementById("email").value.trim();
+    const msg = document.getElementById("msg");
+    
+    // Limpiar clases anteriores
+    msg.textContent = "";
+    msg.className = "";
+
+
+    if (!email) {
+        msg.textContent = "⚠️ Ingresa tu correo electrónico.";
+        msg.classList.add("msg-error");
+        return;
+    }
+
+    // 🔥 Método correcto para enviar enlace de reset password
+    const { data, error } = await supabaseClient.auth.signInWithOtp({
+        email: email,
+        options: {
+            emailRedirectTo: "https://alby-on.github.io/Sistema_panol_v3/reset.html",
+            shouldCreateUser: false,
+            flowType: "recovery"    // 🔥 Clave para reset password
+        }
+    });
+
+    if (error) {
+        msg.textContent = "❌ Error: " + error.message;
+        msg.classList.add("msg-error");
+        return;
+    }
+
+    msg.classList.add("msg-success");
+    msg.textContent = "✅ Correo enviado correctamente. Revisa tu bandeja de entrada o spam para continuar.";
+}
+</script>
+
+</body>
+</html>
+
+

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Menú Principal - Sistema de Pañol</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <style>
+        /* Variables de Color (Mismas que en el login/registro) */
+        :root {
+            --color-primary: #004d99; /* Azul marino/institucional */
+            --color-secondary: #28a745; /* Verde para acciones principales */
+            --color-danger: #dc3545; /* Rojo para cerrar sesión */
+            --color-background: #eef1f5; /* Fondo claro y suave */
+            --color-card: #ffffff; /* Fondo de las cajas */
+            --color-text: #333333; /* Texto oscuro */
+            --color-accent-bg: #f0f8ff; /* Fondo sutil para el perfil */
+        }
+
+        /* Estilos Generales */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--color-background);
+            margin: 0;
+            padding: 0;
+            color: var(--color-text);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        /* Caja Principal (Card) */
+        .box {
+            background: var(--color-card);
+            padding: 30px;
+            width: 100%;
+            max-width: 420px;
+            margin: 20px 15px; /* Margen para evitar tocar los bordes del móvil */
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        /* Encabezado */
+        h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: var(--color-primary);
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 10px;
+        }
+
+        /* Mensaje de Bienvenida */
+        .welcome {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: 20px;
+            padding: 10px;
+            background: var(--color-accent-bg);
+            border-radius: 6px;
+        }
+
+        /* Sección de Perfil */
+        .perfil {
+            background: var(--color-accent-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: left;
+            font-size: 1em;
+            border: 1px solid #d0e8ff; /* Borde sutil */
+        }
+
+        .perfil p {
+            margin: 5px 0;
+            line-height: 1.4;
+        }
+
+        .perfil b {
+            color: var(--color-primary);
+            display: inline-block;
+            min-width: 80px; /* Alineación de etiquetas */
+        }
+
+        /* Botones de Acción (Menú) */
+        button {
+            width: 100%;
+            background: var(--color-secondary); /* Botón principal verde */
+            color: white;
+            padding: 14px; /* Mayor padding para móvil */
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        
+        button:hover {
+            background: #1e8734;
+            transform: translateY(-1px);
+        }
+
+        /* Botón de Cerrar Sesión (Color de Peligro) */
+        .logout {
+            background: var(--color-danger) !important; 
+            margin-top: 25px; /* Separación visual de las acciones */
+        }
+        
+        .logout:hover {
+            background: #a82736 !important;
+        }
+
+        /* Ajustes para Móviles */
+        @media (max-width: 600px) {
+            .box {
+                margin: 10px;
+                padding: 20px;
+            }
+            h2 {
+                font-size: 1.6em;
+            }
+            button {
+                padding: 12px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>Menú del Pañol ⚙️</h2>
+
+    <div id="welcomeMsg" class="welcome"></div>
+
+    <h3>Su Perfil de Acceso</h3>
+    <div class="perfil">
+        <p><b>👤 Nombre:</b> <span id="pNombre"></span></p>
+        <p><b>💳 RUT:</b> <span id="pRut"></span></p>
+        <p><b>🏫 Carrera:</b> <span id="pCarrera"></span></p>
+        <p><b>📱 Teléfono:</b> <span id="pTelefono"></span></p>
+        <p><b>📧 Correo:</b> <span id="pCorreo"></span></p>
+    </div>
+    
+    <button onclick="location.href='solicitar.html'">📝 Solicitar Materiales</button>
+    <button onclick="location.href='entregar.html'">📦 Entregar Materiales</button>
+    <button onclick="location.href='historial.html'">📜 Historial de Entregas</button>
+    <button id="admin_panel_Button" style="display:none;" onclick="location.href='panel_admin.html'">🛠️ Gestor Solicitudes</button>
+    <button id="admin_estadisticas_Button" style="display:none;" onclick="location.href='panel_estadisticas.html'">📈 Panel de Estadisticas</button>
+    <button id="admin_historial_Button" style="display:none;" onclick="location.href='historial_admin.html'">📜 Historico Solicitudes</button>
+    <button class="logout" onclick="logout()">Cerrar Sesión</button>
+</div>
+
+<script type="module">
+/* ---------------------- SESIÓN ACTIVA ---------------------- */
+const user = JSON.parse(localStorage.getItem("currentUser"));
+
+if (!user) {
+    window.location.href = "index.html";
+}
+
+/* ---------------------- DATOS EN PANTALLA ---------------------- */
+document.getElementById("welcomeMsg").textContent = `👋 Bienvenido(a), ${user.nombre.split(' ')[0]}`; // Mostrar solo el primer nombre
+document.getElementById("pNombre").textContent   = user.nombre;
+document.getElementById("pRut").textContent      = user.rut;
+document.getElementById("pCarrera").textContent  = user.carrera;
+document.getElementById("pTelefono").textContent = user.telefono;
+document.getElementById("pCorreo").textContent   = user.email;
+
+/* ---------------------- CERRAR SESIÓN ---------------------- */
+function logout() {
+    localStorage.removeItem("currentUser");
+    window.location.href = "index.html";
+}
+
+/* ---- Necesario para que el botón funcione ---- */
+window.logout = logout;
+
+// Mostrar botón Admin solo si el usuario es Admin
+if (user.rol === "admin") {
+    document.getElementById("admin_panel_Button").style.display = "block";
+}
+
+// Mostrar botón Admin solo si el usuario es Admin
+if (user.rol === "admin") {
+    document.getElementById("admin_estadisticas_Button").style.display = "block";
+}
+// Mostrar botón Admin solo si el usuario es Admin
+if (user.rol === "admin") {
+    document.getElementById("admin_historial_Button").style.display = "block";
+}
+</script>
+
+</body>
+</html>
+

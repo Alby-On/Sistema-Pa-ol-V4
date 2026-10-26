@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Historial de Solicitudes Entregadas</title>
+
+<style>
+    /* Variables Institucionales */
+    :root {
+        --color-primary: #004d99;
+        --color-secondary: #28a745;
+        --color-info: #2196F3;
+        --color-warning: #ff9800;
+        --color-muted: #6c757d;
+        --color-background: #eef1f5;
+        --color-card: #ffffff;
+        --color-text: #333333;
+        --color-border: #cccccc;
+    }
+
+    /* General */
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--color-background);
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+    }
+
+    .container {
+        max-width: 1100px;
+        width: 100%;
+        margin: 20px 15px;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+        text-align: center;
+        color: var(--color-primary);
+        margin-bottom: 25px;
+        font-size: 1.8em;
+        border-bottom: 2px solid var(--color-primary);
+        padding-bottom: 10px;
+    }
+
+    /* Botón volver centrado */
+    .volver-wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+    .btn-volver {
+        padding: 12px 18px;
+        background: var(--color-primary);
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 1em;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+    .btn-volver:hover { background: #003a73; }
+
+    /* Filtros */
+    .filter-box {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+    }
+    .filter-box input, .filter-box button {
+        padding: 12px;
+        font-size: 1em;
+        border-radius: 6px;
+        border: 1px solid var(--color-border);
+    }
+    .filter-box input {
+        flex-grow: 1;
+        min-width: 120px;
+    }
+    .filter-box button {
+        background: var(--color-secondary);
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .filter-box button:hover { background: #1e7e34; }
+
+    /* CARDS */
+    .card-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 20px;
+    }
+
+    .card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid var(--color-border);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .card h3 {
+        margin: 0;
+        color: var(--color-primary);
+        font-size: 1.2em;
+    }
+
+    .card p { margin: 4px 0; }
+
+    .acciones {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn {
+        flex: 1;
+        padding: 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: none;
+        color: white;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    .btn-materiales { background: var(--color-info); }
+    .btn-materiales:hover { background: #1377c0; }
+
+    .btn-repetir { background: var(--color-warning); }
+    .btn-repetir:hover { background: #e08e00; }
+
+    .mensaje-vacio {
+        display:none;
+        margin-top: 20px;
+        text-align:center;
+        background:#fff8e1;
+        padding:20px;
+        border-radius:8px;
+        border:1px solid #ffecb3;
+        color:#8f6509;
+        font-size: 1.1em;
+        font-weight: 500;
+    }
+
+    /* Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+    .modal-content {
+        background: var(--color-card);
+        width: 100%;
+        max-width: 550px;
+        padding: 30px;
+        border-radius: 10px;
+    }
+    .modal-header {
+        font-size: 1.3em;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: var(--color-primary);
+        border-bottom: 2px solid var(--color-primary);
+        padding-bottom: 10px;
+    }
+    .close-btn {
+        float: right;
+        cursor: pointer;
+        font-size: 24px;
+    }
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="volver-wrapper">
+        <a href="menu.html" class="btn-volver">⬅ Volver al Menú</a>
+    </div>
+
+    <h2>Historial de Solicitudes Entregadas 📜</h2>
+
+    <div class="filter-box">
+        <input type="date" id="desde">
+        <input type="date" id="hasta">
+        <button id="btn-buscar">Buscar por Fechas</button>
+    </div>
+
+    <!-- AQUI SE MOSTRARÁN LAS CARDS -->
+    <div id="cards-historial" class="card-list"></div>
+
+    <div id="sin-datos" class="mensaje-vacio">
+        ⚠️ No tienes solicitudes entregadas registradas en tu historial.
+    </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal-materiales">
+    <div class="modal-content">
+        <span class="close-btn" onclick="cerrarModal()">×</span>
+        <div class="modal-header">Materiales Solicitados</div>
+
+        <table>
+            <thead>
+                <tr><th>Material</th><th>Cantidad</th></tr>
+            </thead>
+            <tbody id="modal-body-materiales"></tbody>
+        </table>
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+/* ---------------------- CLIENTE SUPABASE ---------------------- */
+const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let usuario = null;
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+
+    if (!session) {
+        alert("Debes iniciar sesión.");
+        window.location.href = "index.html";
+        return;
+    }
+
+    usuario = session.user.email;
+    cargarHistorial();
+});
+
+/* ---------------------- CARGAR HISTORIAL EN CARDS ---------------------- */
+async function cargarHistorial() {
+    const { data: solicitudes } = await supabaseClient
+        .from('solicitudes')
+        .select('*')
+        .eq('email', usuario)
+        .eq('estado', 'Entregado')
+        .order('fecha_entrega', { ascending: false });
+
+    const contenedor = document.getElementById("cards-historial");
+    const sinDatos = document.getElementById("sin-datos");
+
+    contenedor.innerHTML = "";
+
+    if (!solicitudes || solicitudes.length === 0) {
+        sinDatos.style.display = "block";
+        return;
+    }
+    sinDatos.style.display = "none";
+
+    const solicitudesConMateriales = await Promise.all(
+        solicitudes.map(async (s) => {
+            const { data: materiales } = await supabaseClient
+                .from('materiales_solicitados')
+                .select('*')
+                .eq('id_solicitud', s.id);
+
+            return { ...s, materiales };
+        })
+    );
+
+    solicitudesConMateriales.forEach(s => {
+        const materialesJson = encodeURIComponent(JSON.stringify(s.materiales));
+
+        const card = document.createElement("div");
+        card.classList.add("card");
+
+        card.innerHTML = `
+            <h3>Solicitud #${s.id}</h3>
+            <p><strong>Docente:</strong> ${s.docente}</p>
+            <p><strong>Asignatura:</strong> ${s.asignatura}</p>
+            <p><strong>Fecha Solicitud:</strong> ${new Date(s.fecha_solicitud).toLocaleDateString()}</p>
+            <p><strong>Fecha Entrega:</strong> ${new Date(s.fecha_entrega).toLocaleDateString()}</p>
+
+            <div class="acciones">
+                <button class="btn btn-materiales" onclick='verMaterialesJSON("${materialesJson}")'>👁️ Ver</button>
+                <button class="btn btn-repetir" onclick='repetirSolicitud(${s.id})'>🔄 Repetir</button>
+            </div>
+        `;
+
+        contenedor.appendChild(card);
+    });
+}
+
+/* ------------------ MODAL MATERIALES ------------------ */
+function verMaterialesJSON(json) {
+    const materiales = JSON.parse(decodeURIComponent(json));
+    const tbody = document.getElementById("modal-body-materiales");
+    tbody.innerHTML = "";
+
+    materiales.forEach(m => {
+        tbody.innerHTML += `<tr><td>${m.material}</td><td>${m.cantidad}</td></tr>`;
+    });
+
+    document.getElementById("modal-materiales").style.display = "flex";
+}
+
+function cerrarModal() {
+    document.getElementById("modal-materiales").style.display = "none";
+}
+
+/* ------------------ REPETIR SOLICITUD ------------------ */
+async function repetirSolicitud(id_solicitud) {
+
+    const { data: materiales } = await supabaseClient
+        .from('materiales_solicitados')
+        .select('*')
+        .eq('id_solicitud', id_solicitud);
+
+    const { data: solicitudOriginal } = await supabaseClient
+        .from('solicitudes')
+        .select('docente, asignatura')
+        .eq('id', id_solicitud)
+        .single();
+
+    const params = new URLSearchParams({
+        docente: solicitudOriginal.docente,
+        asignatura: solicitudOriginal.asignatura,
+        materiales: JSON.stringify(materiales.map(m => m.material)),
+        cantidades: JSON.stringify(materiales.map(m => m.cantidad))
+    });
+
+    window.location.href = `solicitar.html?${params.toString()}`;
+}
+
+/* ------------------ FILTRO FECHAS ------------------ */
+document.getElementById("btn-buscar").addEventListener("click", async () => {
+    const desde = document.getElementById("desde").value;
+    const hasta = document.getElementById("hasta").value;
+
+    let query = supabaseClient
+        .from('solicitudes')
+        .select('*')
+        .eq('email', usuario)
+        .eq('estado', 'Entregado');
+
+    if (desde) query = query.gte('fecha_entrega', desde);
+    if (hasta) query = query.lte('fecha_entrega', hasta + "T23:59:59.999Z");
+
+    const { data } = await query.order('fecha_entrega', { ascending: false });
+
+    const contenedor = document.getElementById("cards-historial");
+    const sinDatos = document.getElementById("sin-datos");
+    contenedor.innerHTML = "";
+
+    if (!data || data.length === 0) {
+        sinDatos.style.display = "block";
+        return;
+    }
+    sinDatos.style.display = "none";
+
+    const dataConMateriales = await Promise.all(
+        data.map(async (s) => {
+            const { data: materiales } = await supabaseClient
+                .from('materiales_solicitados')
+                .select('*')
+                .eq('id_solicitud', s.id);
+            return { ...s, materiales };
+        })
+    );
+
+    dataConMateriales.forEach(s => {
+        const materialesJson = encodeURIComponent(JSON.stringify(s.materiales));
+
+        const card = document.createElement("div");
+        card.classList.add("card");
+
+        card.innerHTML = `
+            <h3>Solicitud #${s.id}</h3>
+            <p><strong>Docente:</strong> ${s.docente}</p>
+            <p><strong>Asignatura:</strong> ${s.asignatura}</p>
+            <p><strong>Fecha Solicitud:</strong> ${new Date(s.fecha_solicitud).toLocaleDateString()}</p>
+            <p><strong>Fecha Entrega:</strong> ${new Date(s.fecha_entrega).toLocaleDateString()}</p>
+
+            <div class="acciones">
+                <button class="btn btn-materiales" onclick='verMaterialesJSON("${materialesJson}")'>👁️ Ver</button>
+                <button class="btn btn-repetir" onclick='repetirSolicitud(${s.id})'>🔄 Repetir</button>
+            </div>
+        `;
+
+        contenedor.appendChild(card);
+    });
+});
+</script>
+</body>
+</html>
+

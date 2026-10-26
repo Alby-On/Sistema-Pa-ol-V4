@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Restablecer Contraseña</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* Variables de Color (Consistencia Institucional) */
+        :root {
+            --color-primary: #004d99;
+            --color-secondary: #6c757d;
+            --color-background: #eef1f5;
+            --color-card: #ffffff;
+            --color-text: #333333;
+            --color-border: #cccccc;
+            --color-success: #28a745;
+            --color-danger: #dc3545;
+            --icon-width: 40px; /* Ancho reservado para el icono del ojo */
+            --height-message-match: 25px; /* Altura reservada para el mensaje de coincidencia */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--color-background);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--color-card);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            border: 1px solid #d0d5dd;
+        }
+
+        h2 {
+            color: var(--color-primary);
+            margin-bottom: 25px;
+            font-size: 1.6em;
+            font-weight: 600;
+        }
+        
+        .container p {
+            color: var(--color-text);
+            font-size: 1em;
+            margin-bottom: 15px;
+        }
+
+        /* Estilos generales de input */
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 0; /* Aseguramos que no tenga margen superior */
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+            box-sizing: border-box;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--color-primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 77, 153, 0.2);
+        }
+
+        button {
+            width: 100%;
+            margin-top: 15px;
+            padding: 12px;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        button:not(.btn-secondary) {
+            background: var(--color-primary);
+        }
+
+        button:not(.btn-secondary):hover {
+            background: #003a73;
+        }
+        
+        .btn-secondary {
+            background: var(--color-secondary);
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        #msg {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 0.9em;
+            font-weight: 500;
+            border-radius: 4px;
+            min-height: 30px;
+            text-align: left;
+            box-sizing: border-box;
+        }
+
+        .msg-error {
+            color: var(--color-danger);
+            background: #ffe5e5;
+            border: 1px solid #ffb8b8;
+        }
+
+        .msg-success {
+            color: var(--color-success);
+            background: #e6ffe6;
+            border: 1px solid #b8ffb8;
+        }
+
+        /* ------------------------------------- */
+        /* CORRECCIONES DE ALINEACIÓN DE CONTRASEÑA */
+        /* ------------------------------------- */
+
+        .password-container {
+            position: relative;
+            margin-top: 10px; /* Espacio antes del input */
+            margin-bottom: 5px; 
+        }
+
+        .password-container input {
+            /* Asegura espacio a la derecha para el icono, evitando desalineación */
+            padding-right: var(--icon-width); 
+        }
+
+        /* Estilos para el icono de mostrar/ocultar (Centrado vertical estable con Flexbox) */
+        .toggle-password {
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 100%; /* Cubre toda la altura del input */
+            width: var(--icon-width); 
+            display: flex; 
+            align-items: center; /* Centrado vertical */
+            justify-content: center; /* Centrado horizontal */
+            cursor: pointer;
+            user-select: none;
+            color: var(--color-border);
+            font-size: 1.2em;
+            transition: color 0.3s;
+        }
+
+        .toggle-password:hover {
+            color: var(--color-primary);
+        }
+
+        /* Contenedor del mensaje de coincidencia (para estabilizar el layout) */
+        .message-spacer {
+            min-height: var(--height-message-match); /* Reservar el espacio aunque esté vacío */
+            margin-bottom: 10px; /* Espacio antes del botón de actualizar */
+        }
+        
+        /* Estilo para el mensaje de coincidencia de contraseña */
+        #password-match-message {
+            font-size: 0.9em;
+            font-weight: 600;
+            margin: 5px 0 0 5px; 
+            text-align: left;
+            box-sizing: border-box;
+            display: block; 
+        }
+
+        /* Resaltar inputs cuando no coinciden */
+        .password-mismatch {
+            border-color: var(--color-danger) !important;
+            box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2) !important;
+        }
+
+        @media (max-width: 450px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>🔑 Restablecer Contraseña</h2>
+        <p>Ingresa tu nueva contraseña:</p>
+
+        <!-- Usar <form> para que el botón de actualizar pueda ser de tipo submit -->
+        <form onsubmit="event.preventDefault(); cambiarPassword();">
+            <div class="password-container">
+                <!-- Placeholder y minlength actualizados a 8 -->
+                <input type="password" id="nuevaPass" placeholder="🔑 Nueva Contraseña (mín. 8 caracteres)" onkeyup="checkPasswordMatch()" required minlength="8"/>
+                <span class="toggle-password" onclick="toggleVisibility('nuevaPass', this)">👁️</span>
+            </div>
+
+            <div class="password-container">
+                <!-- minlength actualizado a 8 -->
+                <input type="password" id="confirmarPass" placeholder="✅ Confirma tu Contraseña" onkeyup="checkPasswordMatch()" required minlength="8"/>
+                <span class="toggle-password" onclick="toggleVisibility('confirmarPass', this)">👁️</span>
+            </div>
+            
+            <!-- **CORRECCIÓN:** Contenedor dedicado para el mensaje para estabilizar el layout. -->
+            <div class="message-spacer">
+                <p id="password-match-message"></p>
+            </div>
+
+            <button id="btnActualizar" type="submit" disabled>Actualizar Contraseña</button>
+        </form>
+        
+        <button class="btn-secondary" id="btnLogin" onclick="irLogin()" disabled>Volver al Inicio de Sesión</button>
+
+        <p id="msg"></p>
+    </div>
+
+<script>
+const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function showMessage(text, isError = false) {
+    const msg = document.getElementById("msg");
+    msg.textContent = isError ? "❌ " + text : "✅ " + text;
+    msg.className = isError ? "msg-error" : "msg-success";
+}
+
+async function init() {
+    const hash = window.location.hash;
+
+    if (!hash) {
+        showMessage("No se detectó enlace válido.", true);
+        return;
+    }
+
+    const params = new URLSearchParams(hash.slice(1));
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+
+    if (!access_token || !refresh_token) {
+        showMessage("El enlace es inválido o expiró.", true);
+        return;
+    }
+
+    const { error } = await supabaseClient.auth.setSession({ access_token, refresh_token });
+    if (error) {
+        showMessage("Error al iniciar sesión desde el enlace.", true);
+        return;
+    }
+}
+
+init();
+
+async function cambiarPassword() {
+    // ⬇️ Obtener el valor del campo principal
+    const nuevaPass = document.getElementById("nuevaPass").value; 
+    const btnLogin = document.getElementById("btnLogin");
+    const btnActualizar = document.getElementById("btnActualizar"); // Lo usamos para deshabilitarlo
+
+    // Ya no es necesario validar campo vacío aquí si usamos checkPasswordMatch
+    // pero mantenemos la validación de la función por seguridad.
+    if (!nuevaPass) {
+        showMessage("Ingresa una nueva contraseña.", true);
+        return;
+    }
+    
+    // 🚫 Impedir el envío si el botón está habilitado por error o manipulación
+    if (btnActualizar.disabled) {
+        showMessage("Las contraseñas no cumplen los requisitos.", true);
+        return;
+    }
+
+    // Deshabilitar botón durante el proceso
+    btnActualizar.disabled = true; 
+
+    const { error } = await supabaseClient.auth.updateUser({ password: nuevaPass });
+    
+    if (error) {
+        showMessage("Error al actualizar contraseña: " + error.message, true);
+        btnActualizar.disabled = false; // Re-habilitar si falla
+        return;
+    }
+
+    showMessage("Contraseña actualizada correctamente.");
+    btnLogin.disabled = false; // 🔹 Habilita el botón de Volver al Login
+}
+
+function irLogin() {
+    window.location.href = "index.html";
+}
+// ----------------------------------------
+// FUNCIONES DE UTILIDAD PARA CONTRASEÑA
+// ----------------------------------------
+
+/**
+ * Alterna la visibilidad de un campo de contraseña.
+ */
+function toggleVisibility(fieldId, toggleElement) {
+    const field = document.getElementById(fieldId);
+    
+    if (field.type === "password") {
+        field.type = "text";
+        toggleElement.textContent = "🔒"; // Icono de cerrado (visible)
+    } else {
+        field.type = "password";
+        toggleElement.textContent = "👁️"; // Icono de abierto (oculto)
+    }
+}
+
+/**
+ * Verifica si las dos contraseñas coinciden.
+ */
+function checkPasswordMatch() {
+    const pass = document.getElementById("nuevaPass");
+    const confirmPass = document.getElementById("confirmarPass");
+    const messageElement = document.getElementById("password-match-message");
+    const btnActualizar = document.getElementById("btnActualizar");
+
+    const passValue = pass.value.trim();
+    const confirmValue = confirmPass.value.trim();
+
+    // Limpiar clases y mensajes
+    messageElement.textContent = "";
+    pass.classList.remove("password-mismatch");
+    confirmPass.classList.remove("password-mismatch");
+    btnActualizar.disabled = true; // Deshabilitar por defecto hasta la validación
+
+    // Mínimo de 6 caracteres (recomendación de Supabase)
+    if (passValue.length > 0 && passValue.length < 6) {
+        messageElement.textContent = "❌ La contraseña debe tener al menos 6 caracteres.";
+        messageElement.style.color = "var(--color-danger)";
+        pass.classList.add("password-mismatch");
+        return false;
+    }
+
+    if (confirmValue.length > 0) {
+        if (passValue !== confirmValue) {
+            // No coinciden
+            messageElement.textContent = "❌ Las contraseñas no coinciden.";
+            messageElement.style.color = "var(--color-danger)";
+            pass.classList.add("password-mismatch");
+            confirmPass.classList.add("password-mismatch");
+            return false;
+        } else if (passValue.length >= 6) {
+            // Coinciden y cumplen el mínimo
+            messageElement.textContent = "✅ Contraseñas coinciden.";
+            messageElement.style.color = "var(--color-success)";
+            btnActualizar.disabled = false; // HABILITAR EL BOTÓN
+            return true;
+        }
+    }
+    return false; // No cumplen los criterios para habilitar el botón
+}
+</script>
+</body>
+</html>
+
+
+
+
+

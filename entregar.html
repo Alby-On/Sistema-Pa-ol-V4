@@ -1,0 +1,328 @@
+<!DOCTYPE html> 
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Entregar Materiales</title>
+
+<style>
+    /* Variables de Color */
+    :root {
+        --color-primary: #004d99;
+        --color-accent: #4a6cf7;
+        --color-success: #28a745;
+        --color-danger: #dc3545;
+        --color-background: #eef1f5;
+        --color-card: #ffffff;
+        --color-text: #333333;
+        --color-border: #cccccc;
+        --color-table-header: var(--color-primary);
+        --color-box-bg: #f9fafc;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--color-background);
+        margin: 0;
+        padding: 0;
+        color: var(--color-text);
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    .container {
+        max-width: 900px;
+        width: 100%;
+        margin: 20px 15px;
+        background: var(--color-card);
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        box-sizing: border-box;
+    }
+
+    /* ---- CONTENEDOR PARA CENTRAR BOTÓN ---- */
+    .volver-wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center; /* CENTRA REALMENTE EL BOTÓN */
+        margin-bottom: 20px;
+    }
+
+    .btn-volver {
+        background: var(--color-primary);
+        color: white;
+        padding: 12px 18px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 1em;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        display: inline-block;
+    }
+
+    .btn-volver:hover {
+        background: #003a73;
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: var(--color-primary);
+        font-size: 1.8em;
+        border-bottom: 2px solid var(--color-primary);
+        padding-bottom: 10px;
+    }
+
+    .solicitud-box {
+        margin-bottom: 30px;
+        padding: 20px;
+        background: var(--color-box-bg);
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .section-title {
+        font-weight: 700;
+        margin: 15px 0 10px 0;
+        font-size: 1.1em;
+        color: var(--color-primary);
+        padding-left: 10px;
+        border-left: 4px solid var(--color-primary);
+    }
+
+    .table-wrapper { overflow-x: auto; width: 100%; }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+        font-size: 0.95em;
+        min-width: 450px;
+    }
+
+    th, td {
+        border: 1px solid #dcdcdc;
+        padding: 10px;
+        text-align: left;
+    }
+
+    .solicitud-box table:first-of-type th {
+        background: var(--color-table-header);
+        color: white;
+        text-align: center;
+    }
+
+    .solicitud-box table:last-of-type th {
+        background: #007bff;
+        color: white;
+    }
+
+    .mensaje-error {
+        display: none;
+        background: #ffe6e6;
+        padding: 12px;
+        color: var(--color-danger);
+        border: 1px solid #ffc0c0;
+        border-radius: 6px;
+        margin-top: 15px;
+        font-size: 0.9em;
+        text-align: center;
+    }
+
+    .btn-entregar {
+        width: 100%;
+        padding: 15px;
+        margin-top: 25px;
+        font-size: 1.1em;
+        background: var(--color-success);
+        border: none;
+        color: white;
+        border-radius: 6px;
+        font-weight: bold;
+        transition: 0.2s;
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .no-solicitudes {
+        text-align: center;
+        padding: 30px;
+        font-size: 1.1em;
+        background: #f1f8ed;
+        border-radius: 8px;
+        border: 1px solid #d4e3c9;
+        margin-top: 20px;
+        color: #2e6d3e;
+    }
+
+    @media (max-width: 600px) {
+        h2 { font-size: 1.6em; }
+        .container { padding: 15px; }
+        table { min-width: 100%; font-size: 0.85em; }
+        .btn-volver { width: 100%; text-align: center; }
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- BOTÓN CENTRADO -->
+    <div class="volver-wrapper">
+        <a href="menu.html" class="btn-volver">⬅ Volver al Menú</a>
+    </div>
+
+    <h2>📦 Entregar Materiales Pendientes</h2>
+
+    <div id="solicitudes-container"></div>
+
+</div>
+
+<script>
+/* --- LÓGICA ORIGINAL SIN MODIFICAR FUNCIONALIDADES --- */
+
+const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const COLOR_PENDIENTE = "#dc3545";
+const COLOR_ENTREGADO = "#28a745";
+
+/* INIT */
+async function init() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+        alert("Debes iniciar sesión.");
+        window.location.href = "index.html";
+        return;
+    }
+
+    cargarSolicitudes(session.user.email);
+}
+
+/* CARGAR SOLICITUDES */
+async function cargarSolicitudes(email) {
+    const { data: solicitudes, error } = await supabaseClient
+        .from('solicitudes')
+        .select('*')
+        .eq('email', email)
+        .eq('estado', 'Pendiente');
+
+    const container = document.getElementById('solicitudes-container');
+    container.innerHTML = "";
+
+    if (!solicitudes || solicitudes.length === 0) {
+        container.innerHTML = `<div class="no-solicitudes">✔ No tienes solicitudes pendientes de entrega.</div>`;
+        return;
+    }
+
+    for (const solicitud of solicitudes) {
+
+        const { data: materiales } = await supabaseClient
+            .from('materiales_solicitados')
+            .select('*')
+            .eq('id_solicitud', solicitud.id);
+
+        const estadoColor =
+            solicitud.estado === "Pendiente" ? COLOR_PENDIENTE : COLOR_ENTREGADO;
+
+        const box = document.createElement("div");
+        box.classList.add("solicitud-box");
+
+        box.innerHTML = `
+            <div class="section-title">Datos de la Solicitud</div>
+
+            <div class="table-wrapper">
+                <table>
+                    <tr><th>ID Solicitud</th><td>${solicitud.id}</td></tr>
+                    <tr><th>Email</th><td>${solicitud.email}</td></tr>
+                    <tr><th>Docente</th><td>${solicitud.docente}</td></tr>
+                    <tr><th>Asignatura</th><td>${solicitud.asignatura}</td></tr>
+                    <tr><th>Fecha Solicitud</th><td>${new Date(solicitud.fecha_solicitud).toLocaleDateString()}</td></tr>
+                    <tr><th>Estado</th><td style="font-weight:bold; color:${estadoColor}">${solicitud.estado}</td></tr>
+                </table>
+            </div>
+
+            <div class="section-title" style="margin-top:20px;">Materiales Solicitados</div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Material</th><th>Cantidad</th><th>Entregado</th></tr>
+                    </thead>
+                    <tbody>
+                        ${materiales.map(m => `
+                            <tr>
+                                <td>${m.material}</td>
+                                <td>${m.cantidad}</td>
+                                <td class="check-col"><input type="checkbox" class="chk"></td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mensaje-error">
+                ⚠️ Debes seleccionar todos los materiales antes de poder completar la entrega.
+            </div>
+
+            <button class="btn-entregar">Completar Entrega</button>
+        `;
+
+        container.appendChild(box);
+
+        const checks = box.querySelectorAll(".chk");
+        const msg = box.querySelector(".mensaje-error");
+        const btn = box.querySelector(".btn-entregar");
+
+        function validar() {
+            const completo = [...checks].every(c => c.checked);
+
+            if (completo) {
+                msg.style.display = "none";
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+            } else {
+                msg.style.display = "block";
+                btn.style.opacity = "0.5";
+                btn.style.cursor = "not-allowed";
+            }
+        }
+
+        checks.forEach(c => c.addEventListener("change", validar));
+
+        btn.addEventListener("click", async () => {
+            if (![...checks].every(c => c.checked)) return;
+
+            const { error: upErr } = await supabaseClient
+                .from("solicitudes")
+                .update({
+                    estado: "Entregado",
+                    fecha_entrega: new Date().toISOString()
+                })
+                .eq("id", solicitud.id);
+
+            if (upErr) return alert("Error: " + upErr.message);
+
+            alert("✔ Entrega registrada correctamente.");
+            cargarSolicitudes(email);
+        });
+
+        validar();
+    }
+}
+
+init();
+</script>
+
+</body>
+</html>
+
+

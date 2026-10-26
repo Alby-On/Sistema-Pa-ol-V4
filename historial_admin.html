@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Historico de Solicitudes</title>
+
+<style>
+    /* Variables de Color (Consistencia Institucional) */
+    :root {
+        --color-primary: #173753; 
+        --color-secondary: #28a745; 
+        --color-info: #2196F3; 
+        --color-warning: #ff9800;
+        --color-muted: #6c757d;
+        --color-background: #f0f2f5;
+        --color-card: #ffffff;
+        --color-text: #333333;
+        --color-border: #cccccc;
+    }
+
+    body {
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background: var(--color-background);
+        margin: 0;
+        padding: 0;
+        color: var(--color-text);
+    }
+
+    /* Banner Superior */
+    header {
+        background-color: var(--color-primary);
+        color: white;
+        padding: 20px 40px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .header-title h1 { font-size: 1.8em; margin: 0; font-weight: 700; }
+    .header-info { text-align: right; }
+    .header-info h2 { font-size: 1.4em; margin: 0; font-weight: 600; color: white; }
+    .header-info p { font-size: 0.9em; margin: 5px 0 0; color: #b0c4de; }
+
+    .main-content {
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 0 20px;
+    }
+
+    /* Botón Volver */
+    .back-button-container { margin-bottom: 20px; }
+    .btn-menu {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: background-color 0.2s;
+        display: inline-flex;
+        align-items: center;
+    }
+    .btn-menu:hover { background-color: #0056b3; }
+    .btn-menu span { margin-right: 8px; }
+
+    /* Contenedor Principal */
+    .container {
+        background: var(--color-card);
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
+    }
+
+    /* Filtros */
+    .filter-box {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+    }
+    .filter-box input, .filter-box button {
+        padding: 12px;
+        font-size: 1em;
+        border-radius: 6px;
+        border: 1px solid var(--color-border);
+    }
+    .filter-box input[type="text"] { flex-grow: 2; min-width: 150px; }
+    .filter-box input[type="date"] { flex-grow: 1; min-width: 120px; }
+    .filter-box button {
+        background: var(--color-secondary);
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .filter-box button:hover { background: #1e7e34; }
+
+    /* Tabla Principal */
+    .tabla-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95em; min-width: 950px; }
+    table th { background: var(--color-primary); color: white; padding: 12px 10px; text-align: left; text-transform: uppercase; }
+    table td { border: 1px solid #e0e0e0; padding: 12px 10px; }
+    #tabla-historial tr:nth-child(even) { background-color: #f8f8f8; }
+
+    .btn-materiales {
+        padding: 8px 10px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        background: var(--color-info);
+        color: white;
+        width: 100%;
+        text-align: center;
+        display: block;
+    }
+
+    /* ---- AJUSTES DEL MODAL (CUADRO "VER") ---- */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        inset: 0;
+        background: rgba(0,0,0,0.6); /* Fondo más oscuro para enfoque */
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        backdrop-filter: blur(2px); /* Efecto desenfoque al fondo */
+    }
+    .modal-content {
+        background: var(--color-card);
+        width: 100%;
+        max-width: 500px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        overflow: hidden; /* Para que el header respete los bordes redondeados */
+        animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-header {
+        background: #f8f9fa;
+        padding: 15px 25px;
+        border-bottom: 2px solid var(--color-primary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .modal-header span.title {
+        font-size: 1.2em;
+        font-weight: 700;
+        color: var(--color-primary);
+    }
+    .close-btn {
+        cursor: pointer;
+        font-size: 28px;
+        color: #dc3545;
+        line-height: 1;
+        transition: transform 0.2s;
+    }
+    .close-btn:hover { transform: scale(1.2); }
+    
+    .modal-body {
+        padding: 20px 25px;
+    }
+    .modal-body table {
+        min-width: 100%;
+        margin-top: 0;
+    }
+    .modal-body table th {
+        background: #e9ecef;
+        color: var(--color-primary);
+        font-size: 0.85em;
+    }
+
+    @media (max-width: 768px) {
+        header { flex-direction: column; text-align: center; gap: 10px; }
+        .header-info { text-align: center; }
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-title">
+        <h1>Histórico de Solicitudes</h1>
+    </div>
+    <div class="header-info">
+        <h2>INACAP</h2>
+        <p>Área Energía y Área Automatización, Electrónica y Robótica</p>
+    </div>
+</header>
+
+<div class="main-content">
+    <div class="back-button-container">
+        <a href="menu.html" class="btn-menu">
+            <span>&#x2190;</span> Volver al Menú
+        </a>
+    </div>
+
+    <div class="container">
+        <div class="filter-box">
+            <input type="text" id="filtro-rut" placeholder="Buscar por RUT del Solicitante">
+            <input type="date" id="desde">
+            <input type="date" id="hasta">
+            <button id="btn-buscar">Buscar / Filtrar</button>
+        </div>
+
+        <div class="tabla-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">ID</th>
+                        <th style="width: 15%;">RUT Solicitante</th>
+                        <th style="width: 20%;">Nombre Solicitante</th>
+                        <th style="width: 25%;">Asignatura/Área</th>
+                        <th style="width: 15%;">Email Solicitante</th>
+                        <th style="width: 10%;">F. Entrega</th>
+                        <th style="width: 10%;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-historial"></tbody>
+            </table>
+        </div>
+        <div id="sin-datos" style="display:none; text-align:center; padding:20px; color:var(--color-muted);">
+            ⚠️ No se encontraron resultados.
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modal-materiales">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="title">📋 Materiales Solicitados</span>
+            <span class="close-btn" onclick="cerrarModal()">×</span>
+        </div>
+        <div class="modal-body">
+            <div class="tabla-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th style="width: 30%;">Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-body-materiales"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+    
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+/* ---------------------- CLIENTE SUPABASE ---------------------- */
+const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+        alert("Debes iniciar sesión.");
+        window.location.href = "index.html";
+        return;
+    }
+    cargarHistorial();
+});
+
+/* ---------------------- FUNCIÓN AUXILIAR DE LIMPIEZA DE RUT ---------------------- */
+/**
+ * Limpia el formato del RUT (elimina puntos y guiones).
+ * IMPORTANTE: Convierte a MINÚSCULAS para la comparación local, 
+ * ya que tu BBDD guarda la 'k' en minúscula.
+ */
+function limpiarRut(rut_input) {
+    if (!rut_input) return '';
+    return rut_input.replace(/\./g, '').replace(/-/g, '').toLowerCase().trim();
+}
+
+
+/* ---------------------- CARGAR HISTORIAL (FILTRADO 100% EN JAVASCRIPT) ---------------------- */
+async function cargarHistorial(filtros = {}) {
+    const { desde, hasta, rut } = filtros;
+    
+    // 1. Consulta Inicial (trae TODOS los datos entregados + el RUT por LEFT JOIN)
+    let query = supabaseClient
+        .from('solicitudes')
+        // Usamos LEFT JOIN para que traiga la solicitud aunque el id_usuario sea NULL
+        .select('*, usuarios!left(rut)')
+        .eq('estado', 'Entregado')
+        .order('fecha_entrega', { ascending: false });
+
+    // NOTA: Los filtros de fecha se aplicarán en el servidor, ya que son eficientes.
+    if (desde) query = query.gte('fecha_entrega', desde);
+    if (hasta) query = query.lte('fecha_entrega', hasta + 'T23:59:59.999Z');
+
+    const { data: solicitudesRaw, error } = await query;
+
+    let solicitudes = solicitudesRaw || [];
+
+    // 2. FILTRADO DE RUT EN JAVASCRIPT (SOLO SI SE PROPORCIONÓ RUT)
+    if (rut) {
+        // Obtenemos el RUT limpio para buscar (ya está en minúsculas por limpiarRut)
+        const rutBuscadoLimpio = limpiarRut(rut); 
+
+        solicitudes = solicitudes.filter(s => {
+            // Extraemos el RUT de la solicitud si existe, y lo limpiamos/minusculizamos para comparar
+            const rutSolicitante = s.usuarios ? limpiarRut(s.usuarios.rut) : '';
+            
+            // Comparamos: solo si el RUT del solicitante CONTIENE el RUT buscado
+            // (Usamos .includes() para simular el ILIKE con comodín)
+            return rutSolicitante.includes(rutBuscadoLimpio);
+        });
+        
+        // Si el filtro de RUT se aplica, ya no necesitamos el filtro de fecha aquí, 
+        // porque ya se aplicó en la consulta de Supabase.
+    }
+
+
+    const tbody = document.getElementById("tabla-historial");
+    const sinDatos = document.getElementById("sin-datos");
+    tbody.innerHTML = "";
+
+    if (error || solicitudes.length === 0) {
+        console.error("Error al cargar solicitudes o no hay datos:", error);
+        sinDatos.style.display = "block";
+        return;
+    }
+
+    sinDatos.style.display = "none";
+
+    // 3. Mapeo de datos
+    const solicitudesConMateriales = await Promise.all(solicitudes.map(async s => {
+        // Extraemos el RUT del JOIN
+        const solicitanteRut = s.usuarios ? s.usuarios.rut : 'N/A';
+        
+        const { data: materiales } = await supabaseClient
+            .from('materiales_solicitados')
+            .select('*')
+            .eq('id_solicitud', s.id);
+        
+        return { ...s, materiales, solicitanteRut };
+    }));
+
+
+    solicitudesConMateriales.forEach(s => {
+        const materialesJson = JSON.stringify(s.materiales).replace(/"/g, '&quot;'); 
+        
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${s.id}</td>
+            <td>${s.solicitanteRut}</td> 
+            <td>${s.docente}</td> 
+            <td>${s.asignatura}</td>
+            <td>${s.email}</td>
+            <td>${new Date(s.fecha_entrega).toLocaleDateString()}</td>
+            <td>
+                <button class="btn btn-materiales" onclick='verMateriales(${materialesJson})'>👁️ Ver</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+/* ------------------ MODAL MATERIALES Y CIERRE ------------------ */
+function verMateriales(materiales) {
+    const tbody = document.getElementById("modal-body-materiales");
+    tbody.innerHTML = "";
+    materiales.forEach(m => {
+        tbody.innerHTML += `<tr><td>${m.material}</td><td>${m.cantidad}</td></tr>`;
+    });
+    document.getElementById("modal-materiales").style.display = "flex";
+}
+
+function cerrarModal() {
+    document.getElementById("modal-materiales").style.display = "none";
+}
+
+/* ------------------ EVENTO DE BÚSQUEDA ------------------ */
+document.getElementById("btn-buscar").addEventListener("click", () => {
+    const desde = document.getElementById("desde").value;
+    const hasta = document.getElementById("hasta").value;
+    
+    const rut_input = document.getElementById("filtro-rut").value;
+    const rutLimpio = limpiarRut(rut_input);
+
+    const filtros = {
+        desde: desde,
+        hasta: hasta,
+        rut: rutLimpio 
+    };
+
+    cargarHistorial(filtros);
+});
+</script>
+</body>
+</html>
