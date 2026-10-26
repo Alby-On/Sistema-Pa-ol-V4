@@ -8,10 +8,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26e">
+    <link rel="stylesheet" href="styles.css?v=2026-10-26f">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26e"></script>
+<script src="supabase.js?v=2026-10-26f"></script>
 </head>
 <body>
 <header class="appbar">
@@ -83,7 +83,7 @@
             </section>
             <section class="panel chart-container">
                 <h3>Horarios de más demanda</h3>
-                <p class="muted chart-note">Solicitudes por día y hora. Más oscuro, más solicitudes.</p>
+                <p class="muted chart-note">Solicitudes por día y bloque del horario de clases. Más oscuro, más solicitudes.</p>
                 <div id="heatmap" class="heatmap"><p class="muted">Calculando…</p></div>
             </section>
             <section class="panel chart-container">
@@ -369,30 +369,51 @@ function formatearDuracion(horas) {
     return `${(horas / 24).toFixed(1).replace('.', ',')} días`;
 }
 
+/* Bloques del horario de clases (08:30 a 22:30, con almuerzo de 13:05 a 13:50) */
+const BLOQUES_HORARIO = [
+    ['08:30', '09:30'], ['09:30', '10:30'], ['10:30', '11:30'], ['11:30', '12:30'],
+    ['12:30', '13:05'], ['13:05', '13:50', 'almuerzo'], ['13:50', '14:50'], ['14:50', '15:50'],
+    ['15:50', '16:50'], ['16:50', '17:50'], ['17:50', '18:50'], ['18:50', '19:50'],
+    ['19:50', '20:50'], ['20:50', '21:50'], ['21:50', '22:30']
+].map(([ini, fin, tipo]) => {
+    const min = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    return { ini, fin, tipo, desde: min(ini), hasta: min(fin) };
+});
+
 function dibujarMapaCalor(fechas) {
     const cont = document.getElementById('heatmap');
     if (!cont) return;
     if (!fechas.length) { cont.innerHTML = '<p class="muted">Aún no hay solicitudes.</p>'; return; }
     const dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-    const matriz = Array.from({ length: 24 }, () => Array(7).fill(0));
-    fechas.forEach(d => { matriz[d.getHours()][(d.getDay() + 6) % 7]++; });
-    // Mostrar solo el rango de horas con actividad, y ocultar el domingo si no hay datos
-    const horasConDatos = matriz.map((fila, h) => fila.some(v => v) ? h : null).filter(h => h !== null);
-    const hMin = Math.min(...horasConDatos), hMax = Math.max(...horasConDatos);
+    const matriz = BLOQUES_HORARIO.map(() => Array(7).fill(0));
+    let fueraDeHorario = 0;
+    fechas.forEach(d => {
+        const minuto = d.getHours() * 60 + d.getMinutes();
+        const fila = BLOQUES_HORARIO.findIndex(b => minuto >= b.desde && minuto < b.hasta);
+        if (fila === -1) { fueraDeHorario++; return; }
+        matriz[fila][(d.getDay() + 6) % 7]++;
+    });
+    // El domingo solo aparece si hay solicitudes ese día
     const diasVisibles = dias.map((_, i) => i).filter(i => i < 6 || matriz.some(f => f[i]));
-    const max = Math.max(...matriz.flat());
-    let html = '<table><thead><tr><th scope="col"><span class="sr-only">Hora</span></th>' +
+    // La intensidad se calcula sin el almuerzo, para que no distorsione la escala
+    const max = Math.max(1, ...matriz.filter((_, i) => BLOQUES_HORARIO[i].tipo !== 'almuerzo').flat());
+    let html = '<table><thead><tr><th scope="col"><span class="sr-only">Bloque</span></th>' +
         diasVisibles.map(i => `<th scope="col">${dias[i]}</th>`).join('') + '</tr></thead><tbody>';
-    for (let h = hMin; h <= hMax; h++) {
-        html += `<tr><th scope="row">${String(h).padStart(2, '0')}:00</th>`;
+    BLOQUES_HORARIO.forEach((b, fila) => {
+        const almuerzo = b.tipo === 'almuerzo';
+        html += `<tr${almuerzo ? ' class="hm-almuerzo"' : ''}><th scope="row">${almuerzo ? 'Almuerzo' : `${b.ini}<span class="hm-fin">–${b.fin}</span>`}</th>`;
         diasVisibles.forEach(i => {
-            const v = matriz[h][i];
-            const nivel = v === 0 ? 0 : Math.ceil(v / max * 5);
-            html += `<td class="hm-${nivel}" title="${dias[i]} ${h}:00 – ${v} solicitudes">${v || ''}</td>`;
+            const v = matriz[fila][i];
+            const nivel = almuerzo || v === 0 ? 0 : Math.min(5, Math.ceil(v / max * 5));
+            html += `<td class="hm-${nivel}" title="${dias[i]} ${b.ini}–${b.fin}${almuerzo ? ' (almuerzo)' : ''}: ${v} solicitudes">${v || ''}</td>`;
         });
         html += '</tr>';
+    });
+    html += '</tbody></table>';
+    if (fueraDeHorario) {
+        html += `<p class="muted chart-note hm-nota">${fueraDeHorario.toLocaleString('es-CL')} solicitudes fuera del horario de clases (antes de 08:30 o después de 22:30) no se muestran.</p>`;
     }
-    cont.innerHTML = html + '</tbody></table>';
+    cont.innerHTML = html;
 }
 
 async function cargarIndicadoresOperativos() {

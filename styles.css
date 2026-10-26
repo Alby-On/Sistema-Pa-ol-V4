@@ -723,3 +723,17 @@ input[type="date"] { -webkit-appearance: none; appearance: none; padding-right: 
 }
 .espera-entrega strong { font-size: 1.0625rem; }
 .chk:disabled { cursor: not-allowed; opacity: .45; }
+
+/* Mapa de calor con bloques de horario */
+.heatmap thead th:first-child, .heatmap tbody th { width: 96px; font-size: .75rem; }
+.hm-fin { color: #8893A1; font-weight: 400; }
+.hm-almuerzo th { color: var(--pending); font-weight: 600; }
+.hm-almuerzo td {
+    background: repeating-linear-gradient(135deg, var(--pending-bg) 0 6px, #FFFAEC 6px 12px);
+    color: var(--pending);
+}
+.hm-nota { margin: 10px 0 0; font-size: .8125rem; }
+@media (max-width: 599px) {
+    .heatmap thead th:first-child, .heatmap tbody th { width: 52px; }
+    .hm-fin { display: none; }
+}
