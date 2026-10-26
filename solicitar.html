@@ -53,7 +53,7 @@
         </div>
 
         <h3 class="section-title">Materiales</h3>
-        <div class="table-wrap">
+        <div class="table-wrap table-open">
             <table id="tabla">
                 <thead>
                     <tr>
@@ -243,6 +243,8 @@ function enableAutocomplete(input, listaOpciones) {
         });
 
         lista.style.display = coincidencias.length > 0 ? 'block' : 'none';
+        // En el teléfono, mover la página lo justo para que la lista se vea completa
+        if (coincidencias.length > 0) lista.scrollIntoView({ block: 'nearest' });
     });
 
     input.addEventListener("blur", () => {
