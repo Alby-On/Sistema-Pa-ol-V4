@@ -666,3 +666,48 @@ input[type="date"] { -webkit-appearance: none; appearance: none; padding-right: 
 }
 .kpi-card:first-child { grid-column: auto; }
 @media print { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
+
+/* ---------- Estadísticas: orden por secciones ---------- */
+.stats-section + .stats-section { margin-top: 32px; }
+.stats-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 0 0 12px;
+}
+.stats-page .kpi-grid { grid-template-columns: 1fr 1fr; margin-bottom: 16px; }
+.stats-page .kpi-grid:last-child { margin-bottom: 0; }
+.stats-page .kpi-card { display: flex; flex-direction: column; }
+.stats-page .kpi-card h3 { min-height: 2.6em; }   /* títulos de 1 o 2 líneas quedan alineados */
+.stats-page .kpi-card .kpi { flex: 1; justify-content: flex-start; }
+.stats-page .kpi-card .kpi-value { font-size: 1.625rem; }
+.stats-page .chart-container { display: flex; flex-direction: column; min-width: 0; }
+.stats-page .chart-container h3 { margin-bottom: 4px; }
+.stats-page .chart-container h3 + .canvas-wrapper,
+.stats-page .chart-container h3 + .heatmap { margin-top: 12px; }
+.chart-note { margin: 0 0 12px; }
+
+.canvas-short { height: 220px; }
+.canvas-bars { height: 360px; }
+.canvas-dona { height: 300px; flex: 1; }
+
+/* El mapa de calor ocupa todo el ancho del panel */
+.heatmap { flex: 1; }
+.heatmap table { width: 100%; table-layout: fixed; min-width: 0; border-spacing: 3px; }
+.heatmap thead th:first-child, .heatmap tbody th { width: 48px; }
+.heatmap td { height: 26px; font-size: .75rem; }
+
+.comments-list { display: grid; gap: 0 32px; }
+.comments-list li strong { font-weight: 600; }
+
+@media (min-width: 900px) {
+    .stats-page .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+    .stats-page .kpi-card .kpi-value { font-size: 1.875rem; }
+    .stats-page .stats-grid { grid-template-columns: 1fr 1fr; align-items: stretch; }
+    .comments-list { grid-template-columns: 1fr 1fr; }
+}
+@media print {
+    .stats-page .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+    .stats-page .stats-grid { grid-template-columns: 1fr 1fr; }
+    .stats-section { break-inside: avoid; }
+}
