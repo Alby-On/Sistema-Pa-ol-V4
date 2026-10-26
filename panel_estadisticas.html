@@ -22,20 +22,42 @@
     </div>
 </header>
 <main class="page page-wide">
-    <div class="stats-grid">
-        <section class="panel chart-container stats-mini">
+    <div class="kpi-grid">
+        <section class="kpi-card kpi-alert" id="kpiPendientes">
+            <h3>Pendientes ahora</h3>
+            <p class="kpi-value">–</p>
+            <p class="kpi-label">Calculando…</p>
+        </section>
+        <section class="kpi-card" id="kpiTiempo">
+            <h3>Tiempo promedio de entrega</h3>
+            <p class="kpi-value">–</p>
+            <p class="kpi-label">Calculando…</p>
+        </section>
+        <section class="kpi-card" id="kpiUnidades">
+            <h3>Unidades prestadas</h3>
+            <p class="kpi-value">–</p>
+            <p class="kpi-label">Calculando…</p>
+        </section>
+        <section class="kpi-card">
+            <h3>Solicitudes realizadas</h3>
+            <div id="solicitudesTotalCount" class="kpi">
+                <p class="kpi-value">0</p>
+                <p class="kpi-label">Desde el inicio del sistema</p>
+            </div>
+        </section>
+        <section class="kpi-card">
             <h3>Usuarios registrados</h3>
             <div id="usuariosCount" class="kpi">
                 <p class="kpi-value">0</p>
                 <p class="kpi-label">Total en el sistema</p>
             </div>
         </section>
-        <section class="panel chart-container stats-mini">
-            <h3>Solicitudes realizadas</h3>
-            <div id="solicitudesTotalCount" class="kpi">
-                <p class="kpi-value" style="color: var(--done)">0</p>
-                <p class="kpi-label">Desde el inicio del sistema</p>
-            </div>
+    </div>
+
+    <div class="stats-grid">
+        <section class="panel chart-container span-2">
+            <h3>Solicitudes por mes</h3>
+            <div class="canvas-wrapper canvas-short"><canvas id="mensualChart"></canvas></div>
         </section>
         <section class="panel chart-container">
             <h3>Docentes con más solicitudes</h3>
@@ -243,8 +265,124 @@ function crearBarraHorizontal(id, label, labels, data, color) {
 /* ==============================
    INICIALIZACIÓN
 ================================ */
+/* ==============================
+   INDICADORES OPERATIVOS
+   Se calculan en la página a partir de las tablas existentes.
+================================ */
+const HORAS_ATRASO = 48; // una solicitud pendiente por más de esto cuenta como atrasada
+
+// Supabase entrega como máximo 1000 filas por consulta: se piden por bloques.
+async function traerTodas(construirConsulta) {
+    const bloque = 1000;
+    let desde = 0, filas = [];
+    while (true) {
+        const { data, error } = await construirConsulta().range(desde, desde + bloque - 1);
+        if (error) throw error;
+        filas = filas.concat(data || []);
+        if (!data || data.length < bloque) return filas;
+        desde += bloque;
+    }
+}
+
+function ponerKpi(id, valor, etiqueta) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.querySelector('.kpi-value').textContent = valor;
+    el.querySelector('.kpi-label').textContent = etiqueta;
+}
+
+function formatearDuracion(horas) {
+    if (horas < 1) return `${Math.round(horas * 60)} min`;
+    if (horas < 48) return `${horas.toFixed(1).replace('.', ',')} h`;
+    return `${(horas / 24).toFixed(1).replace('.', ',')} días`;
+}
+
+async function cargarIndicadoresOperativos() {
+    let solicitudes;
+    try {
+        solicitudes = await traerTodas(() => supabaseClient
+            .from('solicitudes')
+            .select('id, estado, fecha_solicitud, fecha_entrega, materiales_solicitados (cantidad)')
+            .order('id', { ascending: true }));
+    } catch (err) {
+        console.error('Error al cargar indicadores:', err);
+        ['kpiPendientes', 'kpiTiempo', 'kpiUnidades'].forEach(id => ponerKpi(id, '–', 'No se pudo calcular'));
+        return;
+    }
+
+    const ahora = Date.now();
+    const fmt = n => Number(n).toLocaleString('es-CL');
+
+    // 1) Pendientes ahora y cuántas están atrasadas
+    const pendientes = solicitudes.filter(s => s.estado !== 'Entregado');
+    const atrasadas = pendientes.filter(s => s.fecha_solicitud &&
+        (ahora - new Date(s.fecha_solicitud)) / 36e5 > HORAS_ATRASO).length;
+    ponerKpi('kpiPendientes', fmt(pendientes.length),
+        atrasadas > 0 ? `${fmt(atrasadas)} con más de ${HORAS_ATRASO} h de espera` : 'Ninguna atrasada');
+    document.getElementById('kpiPendientes').classList.toggle('is-warning', atrasadas > 0);
+
+    // 2) Tiempo promedio entre solicitud y entrega
+    const tiempos = solicitudes
+        .filter(s => s.estado === 'Entregado' && s.fecha_solicitud && s.fecha_entrega)
+        .map(s => (new Date(s.fecha_entrega) - new Date(s.fecha_solicitud)) / 36e5)
+        .filter(h => h >= 0);
+    if (tiempos.length) {
+        const promedio = tiempos.reduce((a, b) => a + b, 0) / tiempos.length;
+        ponerKpi('kpiTiempo', formatearDuracion(promedio), `Según ${fmt(tiempos.length)} entregas registradas`);
+    } else {
+        ponerKpi('kpiTiempo', '–', 'Aún no hay entregas con fecha');
+    }
+
+    // 3) Unidades prestadas (suma de cantidades)
+    const unidades = solicitudes.reduce((total, s) =>
+        total + (s.materiales_solicitados || []).reduce((t, m) => t + (Number(m.cantidad) || 0), 0), 0);
+    const promedioPorSolicitud = solicitudes.length ? unidades / solicitudes.length : 0;
+    ponerKpi('kpiUnidades', fmt(unidades),
+        `${promedioPorSolicitud.toFixed(1).replace('.', ',')} unidades por solicitud en promedio`);
+
+    // 4) Solicitudes por mes (últimos 12 meses, incluido el actual)
+    const meses = [];
+    const hoy = new Date();
+    for (let i = 11; i >= 0; i--) {
+        const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+        meses.push({ clave: `${d.getFullYear()}-${d.getMonth()}`, nombre: d.toLocaleDateString('es-CL', { month: 'short', year: '2-digit' }), total: 0 });
+    }
+    const porClave = Object.fromEntries(meses.map(m => [m.clave, m]));
+    solicitudes.forEach(s => {
+        if (!s.fecha_solicitud) return;
+        const d = new Date(s.fecha_solicitud);
+        const m = porClave[`${d.getFullYear()}-${d.getMonth()}`];
+        if (m) m.total++;
+    });
+    const ctx = document.getElementById('mensualChart');
+    if (ctx && typeof Chart !== 'undefined') {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: meses.map(m => m.nombre),
+                datasets: [{
+                    label: 'Solicitudes',
+                    data: meses.map(m => m.total),
+                    borderColor: primaryColor,
+                    backgroundColor: 'rgba(18, 48, 75, 0.08)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     renderizarReportes();
+    cargarIndicadoresOperativos();
     setupCommentListener();
 });
 </script>
