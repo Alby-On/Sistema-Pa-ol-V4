@@ -8,10 +8,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26b">
+    <link rel="stylesheet" href="styles.css?v=2026-10-26c">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26b"></script>
+<script src="supabase.js?v=2026-10-26c"></script>
 </head>
 <body>
 <header class="appbar">
@@ -28,13 +28,28 @@
             <p class="kpi-value">–</p>
             <p class="kpi-label">Calculando…</p>
         </section>
+        <section class="kpi-card" id="kpiHoy">
+            <h3>Solicitudes de hoy</h3>
+            <p class="kpi-value">–</p>
+            <p class="kpi-label">Calculando…</p>
+        </section>
         <section class="kpi-card" id="kpiTiempo">
             <h3>Tiempo promedio de entrega</h3>
             <p class="kpi-value">–</p>
             <p class="kpi-label">Calculando…</p>
         </section>
+        <section class="kpi-card kpi-alert" id="kpiObservaciones">
+            <h3>Entregas con observaciones</h3>
+            <p class="kpi-value">–</p>
+            <p class="kpi-label">Calculando…</p>
+        </section>
         <section class="kpi-card" id="kpiUnidades">
             <h3>Unidades prestadas</h3>
+            <p class="kpi-value">–</p>
+            <p class="kpi-label">Calculando…</p>
+        </section>
+        <section class="kpi-card" id="kpiActivos">
+            <h3>Usuarios activos este mes</h3>
             <p class="kpi-value">–</p>
             <p class="kpi-label">Calculando…</p>
         </section>
@@ -58,6 +73,17 @@
         <section class="panel chart-container span-2">
             <h3>Solicitudes por mes</h3>
             <div class="canvas-wrapper canvas-short"><canvas id="mensualChart"></canvas></div>
+        </section>
+        <section class="panel chart-container">
+            <h3>Horarios de más demanda</h3>
+            <p class="muted chart-note">Solicitudes por día y hora, de todo el historial. Más oscuro, más solicitudes.</p>
+            <div id="heatmap" class="heatmap"><p class="muted">Calculando…</p></div>
+        </section>
+        <section class="panel chart-container">
+            <h3>Materiales con más observaciones</h3>
+            <p class="muted chart-note">Veces que el material estaba en una entrega con comentario. Conviene revisarlos.</p>
+            <div class="canvas-wrapper"><canvas id="observacionesChart"></canvas></div>
+            <p id="observacionesVacio" class="empty-state" hidden>Aún no hay entregas con observaciones.</p>
         </section>
         <section class="panel chart-container">
             <h3>Docentes con más solicitudes</h3>
@@ -297,16 +323,42 @@ function formatearDuracion(horas) {
     return `${(horas / 24).toFixed(1).replace('.', ',')} días`;
 }
 
+function dibujarMapaCalor(fechas) {
+    const cont = document.getElementById('heatmap');
+    if (!cont) return;
+    if (!fechas.length) { cont.innerHTML = '<p class="muted">Aún no hay solicitudes.</p>'; return; }
+    const dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const matriz = Array.from({ length: 24 }, () => Array(7).fill(0));
+    fechas.forEach(d => { matriz[d.getHours()][(d.getDay() + 6) % 7]++; });
+    // Mostrar solo el rango de horas con actividad, y ocultar el domingo si no hay datos
+    const horasConDatos = matriz.map((fila, h) => fila.some(v => v) ? h : null).filter(h => h !== null);
+    const hMin = Math.min(...horasConDatos), hMax = Math.max(...horasConDatos);
+    const diasVisibles = dias.map((_, i) => i).filter(i => i < 6 || matriz.some(f => f[i]));
+    const max = Math.max(...matriz.flat());
+    let html = '<table><thead><tr><th scope="col"><span class="sr-only">Hora</span></th>' +
+        diasVisibles.map(i => `<th scope="col">${dias[i]}</th>`).join('') + '</tr></thead><tbody>';
+    for (let h = hMin; h <= hMax; h++) {
+        html += `<tr><th scope="row">${String(h).padStart(2, '0')}:00</th>`;
+        diasVisibles.forEach(i => {
+            const v = matriz[h][i];
+            const nivel = v === 0 ? 0 : Math.ceil(v / max * 5);
+            html += `<td class="hm-${nivel}" title="${dias[i]} ${h}:00 – ${v} solicitudes">${v || ''}</td>`;
+        });
+        html += '</tr>';
+    }
+    cont.innerHTML = html + '</tbody></table>';
+}
+
 async function cargarIndicadoresOperativos() {
     let solicitudes;
     try {
         solicitudes = await traerTodas(() => supabaseClient
             .from('solicitudes')
-            .select('id, estado, fecha_solicitud, fecha_entrega, materiales_solicitados (cantidad)')
+            .select('id, email, estado, fecha_solicitud, fecha_entrega, comentario_entrega, materiales_solicitados (material, cantidad)')
             .order('id', { ascending: true }));
     } catch (err) {
         console.error('Error al cargar indicadores:', err);
-        ['kpiPendientes', 'kpiTiempo', 'kpiUnidades'].forEach(id => ponerKpi(id, '–', 'No se pudo calcular'));
+        ['kpiPendientes', 'kpiHoy', 'kpiTiempo', 'kpiObservaciones', 'kpiUnidades', 'kpiActivos'].forEach(id => ponerKpi(id, '–', 'No se pudo calcular'));
         return;
     }
 
@@ -340,6 +392,61 @@ async function cargarIndicadoresOperativos() {
     ponerKpi('kpiUnidades', fmt(unidades),
         `${promedioPorSolicitud.toFixed(1).replace('.', ',')} unidades por solicitud en promedio`);
 
+
+    // 5) Solicitudes de hoy y de esta semana (la semana parte el lunes)
+    const inicioHoy = new Date(); inicioHoy.setHours(0, 0, 0, 0);
+    const inicioSemana = new Date(inicioHoy);
+    inicioSemana.setDate(inicioSemana.getDate() - ((inicioSemana.getDay() + 6) % 7));
+    const fechaDe = s => s.fecha_solicitud ? new Date(s.fecha_solicitud) : null;
+    const deHoy = solicitudes.filter(s => fechaDe(s) >= inicioHoy).length;
+    const deSemana = solicitudes.filter(s => fechaDe(s) >= inicioSemana).length;
+    ponerKpi('kpiHoy', fmt(deHoy), `${fmt(deSemana)} en lo que va de la semana`);
+
+    // 6) Usuarios activos este mes (correos distintos que hicieron solicitudes)
+    const inicioMes = new Date(inicioHoy.getFullYear(), inicioHoy.getMonth(), 1);
+    const activos = new Set(solicitudes.filter(s => fechaDe(s) >= inicioMes && s.email)
+        .map(s => s.email.trim().toLowerCase())).size;
+    const registrados = await supabaseClient.from('usuarios').select('*', { count: 'exact', head: true });
+    const totalUsuarios = registrados.count || 0;
+    ponerKpi('kpiActivos', fmt(activos), totalUsuarios
+        ? `${Math.round(activos / totalUsuarios * 100)} % de los ${fmt(totalUsuarios)} registrados`
+        : 'Alumnos con al menos una solicitud');
+
+    // 7) Entregas con observaciones
+    //    "Sin Comentarios", "N/A" o vacío = sin observación. Solo cuentan entregas ya revisadas.
+    const esObservacion = c => !!c && !['sin comentarios', 'n/a', ''].includes(c.trim().toLowerCase());
+    const revisadas = solicitudes.filter(s => s.estado === 'Entregado' && s.comentario_entrega && s.comentario_entrega.trim());
+    const conObs = revisadas.filter(s => esObservacion(s.comentario_entrega));
+    if (revisadas.length) {
+        const pct = conObs.length / revisadas.length * 100;
+        ponerKpi('kpiObservaciones', `${pct.toFixed(1).replace('.', ',')} %`,
+            `${fmt(conObs.length)} de ${fmt(revisadas.length)} entregas revisadas`);
+        document.getElementById('kpiObservaciones').classList.toggle('is-warning', pct >= 10);
+    } else {
+        ponerKpi('kpiObservaciones', '–', 'Aún no hay entregas revisadas');
+    }
+
+    // 8) Materiales con más observaciones (top 10)
+    const conteoObs = {};
+    conObs.forEach(s => {
+        const vistos = new Set();
+        (s.materiales_solicitados || []).forEach(m => {
+            const nombre = (m.material || '').trim();
+            if (nombre && !vistos.has(nombre)) { vistos.add(nombre); conteoObs[nombre] = (conteoObs[nombre] || 0) + 1; }
+        });
+    });
+    const topObs = Object.entries(conteoObs).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    if (topObs.length) {
+        crearBarraHorizontal('observacionesChart', 'Entregas con observación',
+            topObs.map(t => t[0]), topObs.map(t => t[1]), '#D9960F');
+    } else {
+        document.getElementById('observacionesChart').parentElement.hidden = true;
+        document.getElementById('observacionesVacio').hidden = false;
+    }
+
+    // 9) Mapa de calor: día de la semana × hora
+    dibujarMapaCalor(solicitudes.map(fechaDe).filter(Boolean));
+
     // 4) Solicitudes por mes (últimos 12 meses, incluido el actual)
     const meses = [];
     const hoy = new Date();
@@ -366,7 +473,7 @@ async function cargarIndicadoresOperativos() {
                     borderColor: primaryColor,
                     backgroundColor: 'rgba(18, 48, 75, 0.08)',
                     fill: true,
-                    tension: 0.3,
+                    cubicInterpolationMode: 'monotone',
                     pointRadius: 3
                 }]
             },
