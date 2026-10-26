@@ -406,8 +406,9 @@ async function cargarIndicadoresOperativos() {
     const inicioMes = new Date(inicioHoy.getFullYear(), inicioHoy.getMonth(), 1);
     const activos = new Set(solicitudes.filter(s => fechaDe(s) >= inicioMes && s.email)
         .map(s => s.email.trim().toLowerCase())).size;
-    const registrados = await supabaseClient.from('usuarios').select('*', { count: 'exact', head: true });
-    const totalUsuarios = registrados.count || 0;
+    // Mismo origen que la tarjeta "Usuarios registrados" (función ya existente en Supabase)
+    const { data: datosUsuarios } = await supabaseClient.rpc('get_total_usuarios');
+    const totalUsuarios = Number(datosUsuarios?.[0]?.total_usuarios) || 0;
     ponerKpi('kpiActivos', fmt(activos), totalUsuarios
         ? `${Math.round(activos / totalUsuarios * 100)} % de los ${fmt(totalUsuarios)} registrados`
         : 'Alumnos con al menos una solicitud');
