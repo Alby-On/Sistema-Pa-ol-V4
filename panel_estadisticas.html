@@ -8,10 +8,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26i">
+    <link rel="stylesheet" href="styles.css?v=2026-10-26j">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26i"></script>
+<script src="supabase.js?v=2026-10-26j"></script>
 </head>
 <body>
 <header class="appbar">
@@ -87,7 +87,13 @@
                 <div id="heatmap" class="heatmap"><p class="muted">Calculando…</p></div>
             </section>
             <section class="panel chart-container">
-                <h3>Solicitudes por carrera</h3>
+                <div class="chart-head">
+                    <h3 id="tituloCarreras">Solicitudes por carrera</h3>
+                    <div class="segmented" role="group" aria-label="Agrupar por">
+                        <button type="button" class="is-active" data-vista="carrera" onclick="cambiarVistaCarreras('carrera')">Carrera</button>
+                        <button type="button" data-vista="area" onclick="cambiarVistaCarreras('area')">Área</button>
+                    </div>
+                </div>
                 <div class="canvas-wrapper canvas-dona"><canvas id="carrerasChart"></canvas></div>
             </section>
         </div>
@@ -253,7 +259,8 @@ async function renderizarReportes() {
 
     // El resto de tus gráficas se mantienen igual...
     crearBarraHorizontal('docentesChart', 'Solicitudes', reportes.docentes.map(d => nombrePropio(d.docente)), reportes.docentes.map(d => d.conteo_solicitudes), primaryColor);
-    crearDona('carrerasChart', reportes.carreras.map(c => c.carrera), reportes.carreras.map(c => c.conteo_solicitudes));
+    datosCarreras = reportes.carreras;
+    dibujarCarreras();
     crearBarraHorizontal('materialesChart', 'Veces Solicitado', reportes.materiales.map(m => m.material), reportes.materiales.map(m => m.veces_solicitado), secondaryColor);
     crearBarraHorizontal('asignaturasChart', 'Solicitudes', reportes.asignaturas.map(a => a.asignatura), reportes.asignaturas.map(a => a.numero_de_solicitudes), tertiaryColor);
 }
@@ -262,15 +269,53 @@ async function renderizarReportes() {
    FUNCIONES DE GRÁFICOS (Modificadas)
 ================================ */
 
-function crearDona(id, labels, data) {
+/* ==============================
+   SOLICITUDES POR CARRERA O POR ÁREA
+================================ */
+const AREAS = ['Área Electricidad', 'Área Automatización y Robótica', 'Área Mecánica', 'Otras Áreas'];
+const COLORES_AREAS = ['#12304B', '#4D7FAE', '#1E7A4C', '#D9960F'];
+
+// Asigna cada carrera a su área según su nombre
+function areaDeCarrera(carrera) {
+    const c = String(carrera || '').toLowerCase();
+    if (c.includes('automatiz') || c.includes('robót') || c.includes('robot')) return 'Área Automatización y Robótica';
+    if (c.includes('eléctric') || c.includes('electric')) return 'Área Electricidad';
+    if (c.includes('mecatr') || c.includes('mecán') || c.includes('mecan')) return 'Área Mecánica';
+    return 'Otras Áreas';
+}
+
+let datosCarreras = [];
+let vistaCarreras = 'carrera';
+let graficoCarreras = null;
+
+function dibujarCarreras() {
+    if (graficoCarreras) { graficoCarreras.destroy(); graficoCarreras = null; }
+    if (vistaCarreras === 'area') {
+        const totales = Object.fromEntries(AREAS.map(a => [a, 0]));
+        datosCarreras.forEach(c => { totales[areaDeCarrera(c.carrera)] += Number(c.conteo_solicitudes) || 0; });
+        const areas = AREAS.filter(a => totales[a] > 0);
+        graficoCarreras = crearDona('carrerasChart', areas, areas.map(a => totales[a]), areas.map(a => COLORES_AREAS[AREAS.indexOf(a)]));
+    } else {
+        graficoCarreras = crearDona('carrerasChart', datosCarreras.map(c => c.carrera), datosCarreras.map(c => c.conteo_solicitudes));
+    }
+}
+
+function cambiarVistaCarreras(vista) {
+    vistaCarreras = vista;
+    document.querySelectorAll('.segmented [data-vista]').forEach(b => b.classList.toggle('is-active', b.dataset.vista === vista));
+    document.getElementById('tituloCarreras').textContent = vista === 'area' ? 'Solicitudes por área' : 'Solicitudes por carrera';
+    dibujarCarreras();
+}
+
+function crearDona(id, labels, data, colores) {
     const ctx = document.getElementById(id);
     if (!ctx || !labels.length) return;
 
     // ASIGNACIÓN DINÁMICA DE COLORES:
     // Creamos un array de colores del mismo largo que los datos recibidos
-    const coloresAsignados = labels.map((_, i) => paletaCarreras[i % paletaCarreras.length]);
+    const coloresAsignados = colores || labels.map((_, i) => paletaCarreras[i % paletaCarreras.length]);
 
-    new Chart(ctx, {
+    return new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels,

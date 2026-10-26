@@ -751,3 +751,16 @@ select:disabled, input:disabled { background: var(--surface-alt); color: var(--m
 .menu-list button.is-locked .item-title { color: var(--muted); }
 .menu-list button.is-locked .item-desc { color: var(--pending); font-weight: 500; }
 .notice-pending .btn { margin-top: 10px; }
+
+/* Selector Carrera / Área */
+.chart-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.chart-head h3 { margin: 0; }
+.segmented { display: inline-flex; padding: 3px; gap: 2px; background: var(--surface-alt); border: 1px solid var(--line); border-radius: 999px; }
+.segmented button {
+    width: auto; min-height: 32px; margin: 0; padding: 4px 14px;
+    background: none; color: var(--muted); border: 0; border-radius: 999px;
+    font-size: .875rem; font-weight: 500;
+}
+.segmented button:hover { background: var(--navy-soft); color: var(--navy); }
+.segmented button.is-active { background: var(--navy); color: #fff; }
+@media print { .segmented { display: none; } }
