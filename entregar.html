@@ -8,9 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26f">
+    <link rel="stylesheet" href="styles.css?v=2026-10-26g">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26f"></script>
+<script src="supabase.js?v=2026-10-26g"></script>
 </head>
 <body>
 <header class="appbar">
@@ -84,7 +84,7 @@ async function cargarSolicitudes(email) {
             <dl class="profile">
                 <dt>Docente</dt><dd>${solicitud.docente}</dd>
                 <dt>Asignatura</dt><dd>${solicitud.asignatura}</dd>
-                <dt>Fecha</dt><dd class="num">${new Date(solicitud.fecha_solicitud).toLocaleDateString()}</dd>
+                <dt>Fecha</dt><dd class="num">${fechaSupabase(solicitud.fecha_solicitud).toLocaleDateString()}</dd>
             </dl>
 
             <div class="section-title">Materiales solicitados</div>
@@ -121,7 +121,7 @@ async function cargarSolicitudes(email) {
         const msg = box.querySelector(".mensaje-error");
         const btn = box.querySelector(".btn-entregar");
         const espera = box.querySelector(".espera-entrega");
-        const disponibleDesde = new Date(solicitud.fecha_solicitud).getTime() + MINUTOS_ESPERA * 60000;
+        const disponibleDesde = fechaSupabase(solicitud.fecha_solicitud).getTime() + MINUTOS_ESPERA * 60000;
         const enEspera = () => Date.now() < disponibleDesde;
 
         function validar() {

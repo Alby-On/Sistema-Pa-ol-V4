@@ -8,9 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26f">
+    <link rel="stylesheet" href="styles.css?v=2026-10-26g">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26f"></script>
+<script src="supabase.js?v=2026-10-26g"></script>
 </head>
 <body>
 <header class="appbar">
@@ -160,7 +160,7 @@ async function cargarHistorial(filtros = {}) {
             <td>${s.docente}</td> 
             <td>${s.asignatura}</td>
             <td>${s.email}</td>
-            <td>${new Date(s.fecha_entrega).toLocaleDateString()}</td>
+            <td>${fechaSupabase(s.fecha_entrega).toLocaleDateString()}</td>
             <td>
                 <button class="btn-sm btn-secondary btn-materiales" onclick='verMateriales(${materialesJson})'>Ver</button>
             </td>

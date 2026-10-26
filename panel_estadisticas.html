@@ -8,10 +8,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26f">
+    <link rel="stylesheet" href="styles.css?v=2026-10-26g">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26f"></script>
+<script src="supabase.js?v=2026-10-26g"></script>
 </head>
 <body>
 <header class="appbar">
@@ -183,7 +183,7 @@ async function setupCommentListener() {
 
         const commentsHtml = solicitudes.map(item => {
             const usuario = item.usuarios?.nombre || 'Usuario Desconocido';
-            const fecha = item.fecha_entrega ? new Date(item.fecha_entrega).toLocaleString('es-ES') : 'Fecha Desconocida';
+            const fecha = item.fecha_entrega ? fechaSupabase(item.fecha_entrega).toLocaleString('es-ES') : 'Fecha Desconocida';
             return `<li><strong>${usuario}</strong> <span class="comment-date">${fecha}</span><div>${escapeHTML(item.comentario_entrega)}</div></li>`;
         }).join('');
 
@@ -435,7 +435,7 @@ async function cargarIndicadoresOperativos() {
     // 1) Pendientes ahora y cuántas están atrasadas
     const pendientes = solicitudes.filter(s => s.estado !== 'Entregado');
     const atrasadas = pendientes.filter(s => s.fecha_solicitud &&
-        (ahora - new Date(s.fecha_solicitud)) / 36e5 > HORAS_ATRASO).length;
+        (ahora - fechaSupabase(s.fecha_solicitud)) / 36e5 > HORAS_ATRASO).length;
     ponerKpi('kpiPendientes', fmt(pendientes.length),
         atrasadas > 0 ? `${fmt(atrasadas)} con más de ${HORAS_ATRASO} h de espera` : 'Ninguna atrasada');
     document.getElementById('kpiPendientes').classList.toggle('is-warning', atrasadas > 0);
@@ -443,7 +443,7 @@ async function cargarIndicadoresOperativos() {
     // 2) Tiempo promedio entre solicitud y entrega
     const tiempos = solicitudes
         .filter(s => s.estado === 'Entregado' && s.fecha_solicitud && s.fecha_entrega)
-        .map(s => (new Date(s.fecha_entrega) - new Date(s.fecha_solicitud)) / 36e5)
+        .map(s => (fechaSupabase(s.fecha_entrega) - fechaSupabase(s.fecha_solicitud)) / 36e5)
         .filter(h => h >= 0);
     if (tiempos.length) {
         const promedio = tiempos.reduce((a, b) => a + b, 0) / tiempos.length;
@@ -464,7 +464,7 @@ async function cargarIndicadoresOperativos() {
     const inicioHoy = new Date(); inicioHoy.setHours(0, 0, 0, 0);
     const inicioSemana = new Date(inicioHoy);
     inicioSemana.setDate(inicioSemana.getDate() - ((inicioSemana.getDay() + 6) % 7));
-    const fechaDe = s => s.fecha_solicitud ? new Date(s.fecha_solicitud) : null;
+    const fechaDe = s => s.fecha_solicitud ? fechaSupabase(s.fecha_solicitud) : null;
     const deHoy = solicitudes.filter(s => fechaDe(s) >= inicioHoy).length;
     const deSemana = solicitudes.filter(s => fechaDe(s) >= inicioSemana).length;
     ponerKpi('kpiHoy', fmt(deHoy), `${fmt(deSemana)} en lo que va de la semana`);
@@ -525,7 +525,7 @@ async function cargarIndicadoresOperativos() {
     const porClave = Object.fromEntries(meses.map(m => [m.clave, m]));
     solicitudes.forEach(s => {
         if (!s.fecha_solicitud) return;
-        const d = new Date(s.fecha_solicitud);
+        const d = fechaSupabase(s.fecha_solicitud);
         const m = porClave[`${d.getFullYear()}-${d.getMonth()}`];
         if (m) m.total++;
     });
