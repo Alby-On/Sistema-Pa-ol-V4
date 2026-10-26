@@ -272,15 +272,16 @@ async function renderizarReportes() {
 /* ==============================
    SOLICITUDES POR CARRERA O POR ÁREA
 ================================ */
-const AREAS = ['Área Electricidad', 'Área Automatización y Robótica', 'Área Mecánica', 'Otras Áreas'];
-const COLORES_AREAS = ['#12304B', '#4D7FAE', '#1E7A4C', '#D9960F'];
+const AREAS = ['Área Electricidad', 'Área Automatización y Robótica', 'Área Mecatrónica', 'Área Mecánica', 'Otras Áreas'];
+const COLORES_AREAS = ['#12304B', '#4D7FAE', '#8A5A00', '#1E7A4C', '#D9960F'];
 
 // Asigna cada carrera a su área según su nombre
 function areaDeCarrera(carrera) {
     const c = String(carrera || '').toLowerCase();
+    if (c.includes('mecatr')) return 'Área Mecatrónica';   // comparte Mecánica y Automatización: va aparte
     if (c.includes('automatiz') || c.includes('robót') || c.includes('robot')) return 'Área Automatización y Robótica';
     if (c.includes('eléctric') || c.includes('electric')) return 'Área Electricidad';
-    if (c.includes('mecatr') || c.includes('mecán') || c.includes('mecan')) return 'Área Mecánica';
+    if (c.includes('mecán') || c.includes('mecan')) return 'Área Mecánica';
     return 'Otras Áreas';
 }
 
