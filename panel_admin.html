@@ -8,9 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26k">
+    <link rel="stylesheet" href="styles.css?v=2026-10-26l">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26k"></script>
+<script src="supabase.js?v=2026-10-26l"></script>
 </head>
 <body>
 <header class="appbar">
@@ -22,7 +22,11 @@
 </header>
 <main class="page page-wide main-content gestor">
     <div class="gestor-toolbar">
-        <input type="search" id="buscador" placeholder="Buscar por ID, alumno, docente, asignatura o material" oninput="renderizar()" autocomplete="off">
+        <div class="gestor-search">
+            <input type="search" id="buscador" placeholder="Buscar por ID, alumno, docente, asignatura o material" oninput="renderizar()" autocomplete="off" aria-label="Buscar solicitudes">
+            <kbd class="atajo" title="Atajo de teclado">/</kbd>
+        </div>
+        <p class="gestor-sync" id="estadoSync" aria-live="polite">Cargando…</p>
         <div class="segmented gestor-tabs" role="tablist" aria-label="Lista">
             <button type="button" class="is-active" data-tab="pendientes" onclick="cambiarPestana('pendientes')">Por entregar <span class="tab-count" id="countPendTab">–</span></button>
             <button type="button" data-tab="entregadas" onclick="cambiarPestana('entregadas')">Sin comentario <span class="tab-count" id="countEntTab">–</span></button>
@@ -279,12 +283,18 @@
             await Promise.all([cargarPendientes(), cargarEntregadas()]);
         } catch (error) {
             console.error('Error al cargar datos:', error);
+            const sync = document.getElementById('estadoSync');
+            sync.textContent = 'Sin conexión, reintentando…';
+            sync.classList.add('is-error');
             if (!firmaAnterior) {
                 pendingContainer.innerHTML = '<p class="empty-state">No se pudieron cargar las solicitudes.</p>';
                 deliveredContainer.innerHTML = '<p class="empty-state">No se pudieron cargar las solicitudes.</p>';
             }
             return;
         }
+        document.getElementById('estadoSync').textContent =
+            'Actualizado ' + new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+        document.getElementById('estadoSync').classList.remove('is-error');
         const firma = JSON.stringify([estado.pendientes, estado.entregadas]);
         if (firma === firmaAnterior) { actualizarTiempos(); return; }
         firmaAnterior = firma;
@@ -377,6 +387,17 @@
         document.querySelectorAll('.gestor-tabs [data-tab]').forEach(b => b.classList.toggle('is-active', b.dataset.tab === tab));
     };
     window.renderizar = renderizar;
+
+    // Atajos de teclado (computador): "/" busca, "Esc" limpia la búsqueda o cierra el comentario
+    document.addEventListener('keydown', (e) => {
+        const buscador = document.getElementById('buscador');
+        const escribiendo = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+        if (e.key === '/' && !escribiendo) { e.preventDefault(); buscador.focus(); buscador.select(); }
+        if (e.key === 'Escape') {
+            if (document.getElementById('commentModal').style.display === 'flex') cerrarFormulario();
+            else if (document.activeElement === buscador && buscador.value) { buscador.value = ''; renderizar(); }
+        }
+    });
 
     // 🚀 Carga inicial y refresco automático cada 5 segundos
     loadDashboardData();

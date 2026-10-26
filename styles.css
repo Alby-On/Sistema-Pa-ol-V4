@@ -809,3 +809,75 @@ select:disabled, input:disabled { background: var(--surface-alt); color: var(--m
 .rc-materiales li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: .9375rem; border-bottom: 1px dashed var(--line); }
 .rc-materiales li:last-child { border-bottom: 0; }
 .request-card .actions { margin-top: 10px; }
+
+/* ---------- Gestor: búsqueda, estado de sincronización ---------- */
+.gestor-search { position: relative; }
+.gestor-search input { padding-right: 44px; }
+.atajo {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    display: none; min-width: 22px; padding: 1px 6px; text-align: center;
+    border: 1px solid var(--line); border-radius: 4px; background: var(--surface-alt);
+    color: var(--muted); font: 500 .75rem var(--font);
+}
+.gestor-sync { margin: 0; font-size: .8125rem; color: var(--muted); }
+.gestor-sync::before {
+    content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px;
+    border-radius: 50%; background: var(--done); vertical-align: 1px;
+}
+.gestor-sync.is-error { color: var(--danger); }
+.gestor-sync.is-error::before { background: var(--danger); }
+
+/* ---------- Gestor en computador: más ancho y tarjetas horizontales ---------- */
+@media (min-width: 900px) {
+    .page-wide.gestor { max-width: 1440px; }
+    .gestor-toolbar { max-width: none; grid-template-columns: minmax(0, 560px) 1fr; align-items: center; }
+    .gestor-sync { justify-self: end; }
+    .atajo { display: inline-block; }
+    .gestor .column > h2 {
+        position: sticky; top: 0; z-index: 2;
+        margin: 0 0 10px; padding: 4px 0 8px;
+        background: var(--bg);
+    }
+}
+@media (min-width: 1200px) {
+    /* Por entregar es lo que se atiende: columna más ancha */
+    .gestor .columns { grid-template-columns: 3fr 2fr; gap: 28px; }
+
+    /* Tarjeta pendiente: datos a la izquierda, materiales a la derecha */
+    .pending-requests .request-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+        grid-template-areas: "top mats" "user mats" "meta mats" "act mats";
+        grid-template-rows: auto auto 1fr auto;
+        column-gap: 20px;
+    }
+    .pending-requests .rc-top { grid-area: top; }
+    .pending-requests .rc-user { grid-area: user; }
+    .pending-requests .rc-meta { grid-area: meta; }
+    .pending-requests .actions { grid-area: act; margin-top: 4px; }
+    .pending-requests .rc-materiales {
+        grid-area: mats; border-top: 0; padding: 0 0 0 20px;
+        border-left: 1px solid var(--line); align-self: stretch;
+    }
+    .pending-requests .rc-materiales summary { pointer-events: none; list-style: none; color: var(--muted); }
+    .pending-requests .rc-materiales summary::-webkit-details-marker { display: none; }
+
+    /* Tarjeta entregada: acciones al costado, en columna */
+    .delivered-requests .request-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 150px;
+        grid-template-areas: "top act" "user act" "meta act" "mats mats";
+        column-gap: 16px;
+    }
+    .delivered-requests .rc-top { grid-area: top; }
+    .delivered-requests .rc-user { grid-area: user; }
+    .delivered-requests .rc-meta { grid-area: meta; }
+    .delivered-requests .rc-materiales { grid-area: mats; }
+    .delivered-requests .actions {
+        grid-area: act; margin: 0; align-self: start;
+        grid-template-columns: 1fr; gap: 6px;
+    }
+    .delivered-requests .actions button { min-height: 36px; font-size: .875rem; padding: 6px 10px; }
+}
+/* La barra superior se alinea con el ancho del gestor */
+@media (min-width: 900px) { body:has(.gestor) .appbar-inner { max-width: 1440px; } }
