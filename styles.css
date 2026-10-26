@@ -935,3 +935,4 @@ select:disabled, input:disabled { background: var(--surface-alt); color: var(--m
     .hist-card .btn-repetir { margin-top: auto; }
     .hist-card .rc-materiales { margin-bottom: 10px; }
 }
+.ya-nota { font-size: .875rem; margin: -2px 0 8px; }

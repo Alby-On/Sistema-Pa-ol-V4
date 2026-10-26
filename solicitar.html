@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26m">
+    <link rel="stylesheet" href="styles.css?v=2026-10-26n">
 
 </head>
 <body>
@@ -55,6 +55,7 @@
 
         <div id="yaSolicitados" hidden>
             <h3 class="section-title">Ya solicitados</h3>
+            <p class="muted ya-nota">Estos materiales ya están en tu solicitud. Puedes sumar más, pero no quitarlos ni cambiarlos.</p>
             <ul id="listaYaSolicitados" class="ya-solicitados"></ul>
         </div>
         <div id="formMateriales">
@@ -88,7 +89,7 @@
     </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26m"></script>
+<script src="supabase.js?v=2026-10-26n"></script>
 <script>
 /* 🔗 Conexión a Supabase */
 
@@ -363,6 +364,7 @@ async function activarModoAgregar() {
     }
 
     document.getElementById("tituloMateriales").textContent = "Materiales a agregar";
+    document.querySelector(".btnRemove").textContent = "Quitar fila";
     document.querySelector(".btnEnviar").innerText = textoBotonEnviar();
 }
 
