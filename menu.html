@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26h">
+    <link rel="stylesheet" href="styles.css?v=2026-10-26i">
 
 </head>
 <body>
@@ -54,7 +54,7 @@
     </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26h"></script>
+<script src="supabase.js?v=2026-10-26i"></script>
 <script type="module">
 /* ---------------------- SESIÓN ACTIVA ---------------------- */
 const user = JSON.parse(localStorage.getItem("currentUser"));
@@ -86,7 +86,7 @@ async function revisarPendiente() {
     if (user.rol === "admin" || typeof supabaseClient === "undefined") return;
     const { data } = await supabaseClient
         .from("solicitudes")
-        .select("id")
+        .select("id, fecha_solicitud")
         .eq("email", user.email)
         .eq("estado", "Pendiente")
         .order("fecha_solicitud", { ascending: false })
@@ -94,8 +94,15 @@ async function revisarPendiente() {
     const pendiente = data && data[0];
     if (!pendiente) return;
     const sol = document.getElementById("btnSolicitar");
-    sol.querySelector(".item-title").textContent = `Agregar a mi solicitud #${pendiente.id}`;
-    sol.querySelector(".item-desc").textContent = "Tienes una solicitud pendiente: agrega lo que te falte";
+    const limite = fechaSupabase(pendiente.fecha_solicitud).getTime() + 2 * 36e5;   // 2 horas para agregar
+    if (Date.now() < limite) {
+        const hora = new Date(limite).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+        sol.querySelector(".item-title").textContent = `Agregar a mi solicitud #${pendiente.id}`;
+        sol.querySelector(".item-desc").textContent = `Puedes agregar lo que te falte hasta las ${hora}`;
+    } else {
+        sol.classList.add("is-locked");
+        sol.querySelector(".item-desc").textContent = "Bloqueado hasta que entregues tu solicitud pendiente";
+    }
     const ent = document.getElementById("btnEntregar");
     ent.classList.add("is-pending");
     ent.querySelector(".item-desc").textContent = `Entrega la solicitud #${pendiente.id} para poder hacer una nueva`;

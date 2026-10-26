@@ -748,3 +748,6 @@ input[type="date"] { -webkit-appearance: none; appearance: none; padding-right: 
 select:disabled, input:disabled { background: var(--surface-alt); color: var(--muted); cursor: not-allowed; }
 .menu-list button.is-pending { box-shadow: inset 4px 0 0 var(--pending-mark); }
 .menu-list button.is-pending .item-desc { color: var(--pending); font-weight: 500; }
+.menu-list button.is-locked .item-title { color: var(--muted); }
+.menu-list button.is-locked .item-desc { color: var(--pending); font-weight: 500; }
+.notice-pending .btn { margin-top: 10px; }

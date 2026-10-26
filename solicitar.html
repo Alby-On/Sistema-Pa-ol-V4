@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26h">
+    <link rel="stylesheet" href="styles.css?v=2026-10-26i">
 
 </head>
 <body>
@@ -57,6 +57,7 @@
             <h3 class="section-title">Ya solicitados</h3>
             <ul id="listaYaSolicitados" class="ya-solicitados"></ul>
         </div>
+        <div id="formMateriales">
         <h3 class="section-title" id="tituloMateriales">Materiales</h3>
         <div class="table-wrap table-open">
             <table id="tabla">
@@ -83,10 +84,11 @@
             <button class="btnRemove btn-danger-text" onclick="removeRow()">Quitar última</button>
         </div>
         <button class="btnEnviar" onclick="enviar()">Enviar solicitud</button>
+        </div>
     </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26h"></script>
+<script src="supabase.js?v=2026-10-26i"></script>
 <script>
 /* 🔗 Conexión a Supabase */
 
@@ -290,6 +292,17 @@ function removeRow() {
     pero sí agregarle materiales. Los administradores no tienen esta restricción.
 ------------------------------------------------------------------- */
 let solicitudPendiente = null;
+const HORAS_PARA_AGREGAR = 2;   // plazo para agregar materiales a una solicitud pendiente
+
+function limiteParaAgregar(sol) {
+    return fechaSupabase(sol.fecha_solicitud).getTime() + HORAS_PARA_AGREGAR * 36e5;
+}
+function plazoVencido(sol) {
+    return Date.now() >= limiteParaAgregar(sol);
+}
+function horaCorta(ms) {
+    return new Date(ms).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+}
 
 function textoBotonEnviar() {
     return solicitudPendiente ? `Agregar a la solicitud #${solicitudPendiente.id}` : "Enviar solicitud";
@@ -324,9 +337,20 @@ async function activarModoAgregar() {
 
     const aviso = document.getElementById("avisoPendiente");
     aviso.hidden = false;
-    aviso.innerHTML = `<p><b>Tienes la solicitud #${s.id} pendiente de entrega.</b></p>
-        <p>No puedes hacer una solicitud nueva hasta entregarla, pero sí puedes agregarle lo que te falte.</p>
-        <p><a href="entregar.html">Ir a entregar materiales</a></p>`;
+    const vencido = plazoVencido(s);
+    aviso.innerHTML = vencido
+        ? `<p><b>Tienes la solicitud #${s.id} pendiente de entrega.</b></p>
+           <p>Pasaron más de ${HORAS_PARA_AGREGAR} horas desde que la hiciste, así que ya no puedes agregarle materiales.
+              Debes entregarla para volver a solicitar.</p>
+           <a href="entregar.html" class="btn">Ir a entregar materiales</a>`
+        : `<p><b>Tienes la solicitud #${s.id} pendiente de entrega.</b></p>
+           <p>No puedes hacer una solicitud nueva hasta entregarla, pero puedes agregarle lo que te falte
+              <b>hasta las ${horaCorta(limiteParaAgregar(s))}</b>.</p>
+           <p><a href="entregar.html">Ir a entregar materiales</a></p>`;
+    if (vencido) {
+        // Plazo vencido: solo se muestra lo pedido y el acceso a entregar
+        document.getElementById("formMateriales").hidden = true;
+    }
 
     const { data: existentes } = await supabaseClient
         .from("materiales_solicitados")
@@ -380,6 +404,12 @@ async function enviar() {
         alert(pendienteActual
             ? `Tienes la solicitud #${pendienteActual.id} pendiente. La página se actualizará para que agregues los materiales a esa solicitud.`
             : "Tu solicitud pendiente ya fue entregada. La página se actualizará para que hagas una solicitud nueva.");
+        window.location.reload();
+        return;
+    }
+
+    if (solicitudPendiente && plazoVencido(solicitudPendiente)) {
+        alert(`Pasaron más de ${HORAS_PARA_AGREGAR} horas desde la solicitud #${solicitudPendiente.id}. Debes entregarla para volver a solicitar.`);
         window.location.reload();
         return;
     }
