@@ -8,9 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26d">
+    <link rel="stylesheet" href="styles.css?v=2026-10-26e">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26d"></script>
+<script src="supabase.js?v=2026-10-26e"></script>
 </head>
 <body>
 <header class="appbar">
@@ -32,6 +32,10 @@
 
 
 
+
+/* Tiempo mínimo entre la solicitud y la entrega */
+const MINUTOS_ESPERA = 5;
+let temporizadores = [];
 
 /* INIT */
 async function init() {
@@ -60,6 +64,9 @@ async function cargarSolicitudes(email) {
         container.innerHTML = `<div class="empty-state">No tienes solicitudes pendientes de entrega.</div>`;
         return;
     }
+
+    temporizadores.forEach(clearInterval);
+    temporizadores = [];
 
     for (const solicitud of solicitudes) {
 
@@ -99,6 +106,8 @@ async function cargarSolicitudes(email) {
                 </table>
             </div>
 
+            <div class="espera-entrega" hidden></div>
+
             <div class="mensaje-error">
                 Marca todos los materiales para completar la entrega.
             </div>
@@ -111,8 +120,28 @@ async function cargarSolicitudes(email) {
         const checks = box.querySelectorAll(".chk");
         const msg = box.querySelector(".mensaje-error");
         const btn = box.querySelector(".btn-entregar");
+        const espera = box.querySelector(".espera-entrega");
+        const disponibleDesde = new Date(solicitud.fecha_solicitud).getTime() + MINUTOS_ESPERA * 60000;
+        const enEspera = () => Date.now() < disponibleDesde;
 
         function validar() {
+            // Durante los primeros minutos no se puede marcar ni completar la entrega
+            if (enEspera()) {
+                const seg = Math.ceil((disponibleDesde - Date.now()) / 1000);
+                const mmss = `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, "0")}`;
+                espera.hidden = false;
+                espera.innerHTML = `Podrás completar la entrega en <strong class="num">${mmss}</strong>. La solicitud se hizo hace menos de ${MINUTOS_ESPERA} minutos.`;
+                checks.forEach(c => { c.disabled = true; c.checked = false; });
+                msg.style.display = "none";
+                btn.disabled = true;
+                btn.style.opacity = "0.5";
+                btn.style.cursor = "not-allowed";
+                return;
+            }
+            espera.hidden = true;
+            checks.forEach(c => { c.disabled = false; });
+            btn.disabled = false;
+
             const completo = [...checks].every(c => c.checked);
 
             if (completo) {
@@ -129,7 +158,7 @@ async function cargarSolicitudes(email) {
         checks.forEach(c => c.addEventListener("change", validar));
 
         btn.addEventListener("click", async () => {
-            if (![...checks].every(c => c.checked)) return;
+            if (enEspera() || ![...checks].every(c => c.checked)) return;
 
             const { error: upErr } = await supabaseClient
                 .from("solicitudes")
@@ -146,6 +175,15 @@ async function cargarSolicitudes(email) {
         });
 
         validar();
+
+        // Actualiza la cuenta regresiva cada segundo hasta que se habilite la entrega
+        if (enEspera()) {
+            const t = setInterval(() => {
+                validar();
+                if (!enEspera()) clearInterval(t);
+            }, 1000);
+            temporizadores.push(t);
+        }
     }
 }
 

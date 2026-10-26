@@ -711,3 +711,15 @@ input[type="date"] { -webkit-appearance: none; appearance: none; padding-right: 
     .stats-page .stats-grid { grid-template-columns: 1fr 1fr; }
     .stats-section { break-inside: avoid; }
 }
+
+/* Entrega bloqueada durante los primeros minutos */
+.espera-entrega {
+    margin: 12px 0 0;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--navy-soft);
+    color: var(--navy);
+    font-size: .9375rem;
+}
+.espera-entrega strong { font-size: 1.0625rem; }
+.chk:disabled { cursor: not-allowed; opacity: .45; }
