@@ -881,3 +881,57 @@ select:disabled, input:disabled { background: var(--surface-alt); color: var(--m
 }
 /* La barra superior se alinea con el ancho del gestor */
 @media (min-width: 900px) { body:has(.gestor) .appbar-inner { max-width: 1440px; } }
+
+/* ---------- Mi historial ---------- */
+.page.historial { max-width: 560px; }
+.hist-resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.hist-stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; min-width: 0; }
+.hist-stat-wide { grid-column: 1 / -1; }
+.hist-num { margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--navy); line-height: 1.2; }
+.hist-txt { font-size: 1.0625rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-lbl { margin: 2px 0 0; font-size: .8125rem; color: var(--muted); }
+
+.hist-toolbar { display: grid; gap: 10px; margin-bottom: 8px; }
+.hist-toolbar input[type="search"] { margin: 0; }
+.hist-periodo { width: 100%; }
+.hist-periodo button { flex: 1; padding: 4px 6px; }
+.hist-fechas { margin: 0; }
+.hist-conteo { font-size: .875rem; margin: 8px 0 4px; }
+
+.hist-mes + .hist-mes { margin-top: 8px; }
+.hist-mes-titulo {
+    position: sticky; top: 63px; z-index: 5;
+    margin: 0 -16px 8px; padding: 10px 16px 6px;
+    background: var(--bg);
+    font-size: .9375rem; font-weight: 600; color: var(--muted);
+}
+.hist-grid { display: grid; gap: 10px; }
+.hist-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; min-width: 0; }
+.hist-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.hist-card-top h3 { margin: 0; font-size: 1rem; }
+.hist-asig { margin: 0; font-weight: 600; }
+.hist-doc { margin: 0 0 8px; color: var(--muted); font-size: .875rem; }
+.hist-fechas-dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0 0 8px; font-size: .875rem; }
+.hist-fechas-dl dt { color: var(--muted); }
+.hist-fechas-dl dd { margin: 0; }
+.hist-card .btn-repetir { min-height: 42px; margin-top: 10px; font-size: .9375rem; }
+#btnMas { margin-top: 14px; }
+
+@media (min-width: 900px) {
+    .page.historial { max-width: 1040px; }
+    .hist-resumen { grid-template-columns: 1fr 1fr 2fr; }
+    .hist-stat-wide { grid-column: auto; }
+    .hist-toolbar { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+    .hist-periodo { width: auto; }
+    .hist-periodo button { flex: none; padding: 4px 14px; }
+    .hist-fechas { grid-column: 1 / -1; max-width: 520px; }
+    .hist-grid { grid-template-columns: 1fr 1fr; align-items: start; }
+    .hist-mes-titulo { margin: 0 0 8px; padding: 10px 0 6px; }
+}
+@media (min-width: 900px) {
+    .page.historial { max-width: 1120px; }
+    .hist-grid { align-items: stretch; }
+    .hist-card { display: flex; flex-direction: column; }
+    .hist-card .btn-repetir { margin-top: auto; }
+    .hist-card .rc-materiales { margin-bottom: 10px; }
+}
