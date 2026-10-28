@@ -8,10 +8,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-26n">
+    <link rel="stylesheet" href="styles.css?v=2026-10-28a">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-26n"></script>
+<script src="supabase.js?v=2026-10-28a"></script>
 </head>
 <body>
 <header class="appbar">
@@ -133,6 +133,12 @@
                 </div>
             </section>
         </div>
+    </section>
+
+    <section class="stats-section">
+        <h2 class="stats-heading">Elementos de protección personal (EPP)</h2>
+        <p class="muted chart-note" id="eppResumen">Calculando…</p>
+        <div class="epp-grid" id="eppGrid"></div>
     </section>
 </main>
 <script>
@@ -462,6 +468,65 @@ function dibujarMapaCalor(fechas) {
     cont.innerHTML = html;
 }
 
+/* ==============================
+   EPP: se buscan en el texto de cada material solicitado.
+   Una línea como "Guantes, antiparra" cuenta para ambos.
+================================ */
+const EPP = [
+    { nombre: 'Guantes',              patron: /\bguantes?\b/ },
+    { nombre: 'Antiparras',           patron: /\b(antiparras?|lentes? de seguridad|gafas? de seguridad)\b/ },
+    { nombre: 'Zapatos de seguridad', patron: /\b(zapatos?|calzado|botin(es)?)\b/ },   // "zapatilla" en Chile es un alargador: no cuenta
+    { nombre: 'Cotona',               patron: /\bcotonas?\b/ },
+    { nombre: 'Puntera',              patron: /\bpunteras?\b/ }
+];
+const normalizar = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+function dibujarEPP(solicitudes) {
+    const grid = document.getElementById('eppGrid');
+    if (!grid) return;
+    const fmt = n => Number(n).toLocaleString('es-CL');
+    const hace30 = Date.now() - 30 * 864e5;
+    const res = EPP.map(e => ({ ...e, solicitudes: new Set(), unidades: 0, ultimos30: new Set(), ultima: null }));
+    const conEPP = new Set();
+
+    solicitudes.forEach(s => {
+        const fecha = fechaSupabase(s.fecha_solicitud);
+        (s.materiales_solicitados || []).forEach(m => {
+            const texto = normalizar(m.material);
+            res.forEach(r => {
+                if (!r.patron.test(texto)) return;
+                r.solicitudes.add(s.id);
+                r.unidades += Number(m.cantidad) || 0;
+                conEPP.add(s.id);
+                if (fecha && fecha >= hace30) r.ultimos30.add(s.id);
+                if (fecha && (!r.ultima || fecha > r.ultima)) r.ultima = fecha;
+            });
+        });
+    });
+
+    const max = Math.max(1, ...res.map(r => r.solicitudes.size));
+    grid.innerHTML = res.map(r => {
+        const n = r.solicitudes.size;
+        const detalle = n
+            ? `${fmt(r.unidades)} ${r.unidades === 1 ? 'unidad' : 'unidades'} · ${fmt(r.ultimos30.size)} en los últimos 30 días`
+            : 'Aún no se ha solicitado';
+        const ultima = r.ultima ? `Última vez: ${r.ultima.toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}` : '';
+        return `
+        <article class="epp-card${n ? '' : ' is-empty'}">
+            <h3>${r.nombre}</h3>
+            <p class="kpi-value num">${fmt(n)}</p>
+            <p class="kpi-label">${n === 1 ? 'solicitud' : 'solicitudes'}</p>
+            <div class="epp-bar" aria-hidden="true"><span style="width:${(n / max * 100).toFixed(1)}%"></span></div>
+            <p class="epp-detalle">${detalle}</p>
+            ${ultima ? `<p class="epp-detalle">${ultima}</p>` : ''}
+        </article>`;
+    }).join('');
+
+    const pct = solicitudes.length ? conEPP.size / solicitudes.length * 100 : 0;
+    document.getElementById('eppResumen').textContent =
+        `${fmt(conEPP.size)} de ${fmt(solicitudes.length)} solicitudes (${pct.toFixed(1).replace('.', ',')} %) incluyeron algún EPP de esta lista.`;
+}
+
 async function cargarIndicadoresOperativos() {
     let solicitudes;
     try {
@@ -557,6 +622,9 @@ async function cargarIndicadoresOperativos() {
         document.getElementById('observacionesChart').parentElement.hidden = true;
         document.getElementById('observacionesVacio').hidden = false;
     }
+
+    // 10) Elementos de protección personal
+    dibujarEPP(solicitudes);
 
     // 9) Mapa de calor: día de la semana × hora
     dibujarMapaCalor(solicitudes.map(fechaDe).filter(Boolean));

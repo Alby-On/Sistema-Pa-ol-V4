@@ -936,3 +936,20 @@ select:disabled, input:disabled { background: var(--surface-alt); color: var(--m
     .hist-card .rc-materiales { margin-bottom: 10px; }
 }
 .ya-nota { font-size: .875rem; margin: -2px 0 8px; }
+
+/* ---------- EPP ---------- */
+.epp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.epp-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; }
+.epp-card h3 { font-size: .875rem; font-weight: 600; color: var(--ink); margin: 0 0 6px; }
+.epp-card .kpi-value { font-size: 1.75rem; }
+.epp-card .kpi-label { margin: 0 0 10px; }
+.epp-bar { height: 6px; border-radius: 3px; background: var(--surface-alt); overflow: hidden; margin-bottom: 8px; }
+.epp-bar span { display: block; height: 100%; background: var(--navy); border-radius: 3px; }
+.epp-detalle { margin: 0; font-size: .8125rem; color: var(--muted); }
+.epp-card.is-empty .kpi-value { color: var(--muted); }
+.epp-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (min-width: 900px) {
+    .epp-grid { grid-template-columns: repeat(5, 1fr); }
+    .epp-card:last-child:nth-child(odd) { grid-column: auto; }
+}
+@media print { .epp-grid { grid-template-columns: repeat(5, 1fr); } }
