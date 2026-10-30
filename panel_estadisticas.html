@@ -8,12 +8,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-28a">
+    <link rel="stylesheet" href="styles.css?v=2026-10-30a">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-28a"></script>
+<script src="supabase.js?v=2026-10-30a"></script>
 </head>
-<body>
+<body data-modulo="estadisticas">
 <header class="appbar">
     <div class="appbar-inner">
         <a href="menu.html" class="appbar-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Menú</a>
@@ -146,9 +146,9 @@
    COLORES
 ================================ */
 
-const primaryColor = '#12304B';
-const secondaryColor = '#1E7A4C';
-const tertiaryColor = '#4D7FAE';
+const primaryColor = '#1D63C9';
+const secondaryColor = '#1A9A5A';
+const tertiaryColor = '#6A4BD6';
 const dangerColor = '#B3261E';
 if (typeof Chart !== 'undefined') {
     Chart.defaults.font.family = "'IBM Plex Sans', system-ui, sans-serif";
@@ -157,8 +157,8 @@ if (typeof Chart !== 'undefined') {
 
 // NUEVA PALETA: Colores para las carreras (puedes añadir más si deseas)
 const paletaCarreras = [
-    '#12304B', '#1E7A4C', '#D9960F', '#4D7FAE', '#8A5A00',
-    '#6B8FB3', '#2E9D6A', '#A9C1D9', '#5A6676', '#B3261E'
+    '#1D63C9', '#1A9A5A', '#E39A0B', '#6A4BD6', '#0C97A3',
+    '#E05A3A', '#7FA8E6', '#5CC48E', '#F2C14E', '#A794EC'
 ];
 
 /* ==============================
@@ -279,7 +279,7 @@ async function renderizarReportes() {
    SOLICITUDES POR CARRERA O POR ÁREA
 ================================ */
 const AREAS = ['Área Electricidad', 'Área Automatización y Robótica', 'Área Mecatrónica', 'Área Mecánica', 'Otras Áreas'];
-const COLORES_AREAS = ['#12304B', '#4D7FAE', '#8A5A00', '#1E7A4C', '#D9960F'];
+const COLORES_AREAS = ['#E39A0B', '#1D63C9', '#6A4BD6', '#E05A3A', '#7A8797'];
 
 // Asigna cada carrera a su área según su nombre
 function areaDeCarrera(carrera) {
@@ -653,7 +653,7 @@ async function cargarIndicadoresOperativos() {
                     label: 'Solicitudes',
                     data: meses.map(m => m.total),
                     borderColor: primaryColor,
-                    backgroundColor: 'rgba(18, 48, 75, 0.08)',
+                    backgroundColor: 'rgba(29, 99, 201, 0.12)',
                     fill: true,
                     cubicInterpolationMode: 'monotone',
                     pointRadius: 3

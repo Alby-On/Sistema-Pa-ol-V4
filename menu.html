@@ -8,10 +8,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-28a">
+    <link rel="stylesheet" href="styles.css?v=2026-10-30a">
 
 </head>
-<body>
+<body data-modulo="inicio">
 <header class="appbar">
     <div class="appbar-inner">
         
@@ -26,17 +26,17 @@
     </div>
 
     <div class="menu-list">
-        <button id="btnSolicitar" onclick="location.href='solicitar.html'"><span class="item-title">Solicitar materiales</span><span class="item-desc">Pide herramientas e insumos para tu clase</span></button>
-        <button id="btnEntregar" onclick="location.href='entregar.html'"><span class="item-title">Entregar materiales</span><span class="item-desc">Completa la entrega de tus solicitudes pendientes</span></button>
-        <button onclick="location.href='historial.html'"><span class="item-title">Mi historial</span><span class="item-desc">Revisa y repite solicitudes anteriores</span></button>
+        <button id="btnSolicitar" onclick="location.href='solicitar.html'" data-color="azul"><span class="item-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11v6M9 14h6"/></svg></span><span class="item-title">Solicitar materiales</span><span class="item-desc">Pide herramientas e insumos para tu clase</span></button>
+        <button id="btnEntregar" onclick="location.href='entregar.html'" data-color="verde"><span class="item-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span><span class="item-title">Entregar materiales</span><span class="item-desc">Completa la entrega de tus solicitudes pendientes</span></button>
+        <button onclick="location.href='historial.html'" data-color="violeta"><span class="item-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg></span><span class="item-title">Mi historial</span><span class="item-desc">Revisa y repite solicitudes anteriores</span></button>
     </div>
 
     <div class="menu-group" id="adminGroup" hidden>
         <h3>Administración</h3>
         <div class="menu-list">
-            <button id="admin_panel_Button" onclick="location.href='panel_admin.html'"><span class="item-title">Gestor de solicitudes</span><span class="item-desc">Entregas pendientes y comentarios</span></button>
-            <button id="admin_estadisticas_Button" onclick="location.href='panel_estadisticas.html'"><span class="item-title">Estadísticas</span><span class="item-desc">Uso del pañol por docente, carrera y material</span></button>
-            <button id="admin_historial_Button" onclick="location.href='historial_admin.html'"><span class="item-title">Histórico de solicitudes</span><span class="item-desc">Busca solicitudes entregadas por RUT o fecha</span></button>
+            <button id="admin_panel_Button" onclick="location.href='panel_admin.html'" data-color="ambar"><span class="item-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></span><span class="item-title">Gestor de solicitudes</span><span class="item-desc">Entregas pendientes y comentarios</span></button>
+            <button id="admin_estadisticas_Button" onclick="location.href='panel_estadisticas.html'" data-color="teal"><span class="item-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="5" y="11" width="3" height="7" rx="1"/><rect x="10.5" y="5" width="3" height="13" rx="1"/><rect x="16" y="14" width="3" height="4" rx="1"/></svg></span><span class="item-title">Estadísticas</span><span class="item-desc">Uso del pañol por docente, carrera y material</span></button>
+            <button id="admin_historial_Button" onclick="location.href='historial_admin.html'" data-color="coral"><span class="item-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span><span class="item-title">Histórico de solicitudes</span><span class="item-desc">Busca solicitudes entregadas por RUT o fecha</span></button>
         </div>
     </div>
 
@@ -54,7 +54,7 @@
     </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-28a"></script>
+<script src="supabase.js?v=2026-10-30a"></script>
 <script type="module">
 /* ---------------------- SESIÓN ACTIVA ---------------------- */
 const user = JSON.parse(localStorage.getItem("currentUser"));
