@@ -1119,3 +1119,5 @@ a { color: var(--primary-dark); }
     .appbar { background: #0F2A4A; }
     [data-modulo="acceso"] { background: #fff; }
 }
+.epp-docentes { margin-top: 16px; }
+.epp-docentes .canvas-wrapper { height: 320px; }
