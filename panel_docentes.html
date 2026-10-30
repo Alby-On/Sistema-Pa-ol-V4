@@ -71,8 +71,7 @@
    - Todo se calcula en la página con las tablas existentes.
 ========================================================== */
 const DOCENTES_FORMULARIO = [
-    "AARÓN EDUARDO SEPÚLVEDA MEDINA", "ALEJANDRO GABRIEL MOENA VALDERRAMA", "BRAYAN PATRICIO DEL VALLE AEDO",
-    "DANIELA FERNANDA MARTÍNEZ MARTÍNEZ", "EDUARDO ARTURO BASTÍAS GARCÍA", "ELÍAS ANDRÉS POBLETE AVILA",
+    "AARÓN EDUARDO SEPÚLVEDA MEDINA", "ALEJANDRO GABRIEL MOENA VALDERRAMA", "BRAYAN PATRICIO DEL VALLE AEDO", "ELÍAS ANDRÉS POBLETE AVILA",
     "GERARDO NICOLÁS SEPÚLVEDA GUTIÉRREZ", "GIOVANNI ANDRÉS JARA TORRES", "JORGE ANDRÉS PÉREZ MILLAR",
     "JOSEFA CATALINA LISBOA RIVERA", "JULIO CESAR ALARCON MONTEROS", "MANUEL ALEJANDRO HENRIQUEZ OLIVA",
     "MARCO ANTONIO ARRIAGADA CASAS", "PEDRO PATRICIO PEDRERO PÉREZ", "RICHARD ANTONIO VALDERRAMA SAN MARTIN",
@@ -80,6 +79,8 @@ const DOCENTES_FORMULARIO = [
     "RODRIGO ALEJANDRO GARRIDO GARRIDO", "ROLANDO EDUARDO ORTEGA FUENTES", "VÍCTOR EDUARDO ZAPATA MYRIK"
 ];
 const SIN_DOCENTE = "OTROS DOCENTES";
+// Docentes desvinculados: no se muestran en esta página
+const DESVINCULADOS = ["DANIELA FERNANDA MARTÍNEZ MARTÍNEZ", "EDUARDO ARTURO BASTÍAS GARCÍA"];
 
 let docentes = [];
 let orden = "cargo";
@@ -170,7 +171,7 @@ function calcular(solicitudes, usuarios) {
     const lista = [...DOCENTES_FORMULARIO];
     solicitudes.forEach(s => {
         const n = normalizar(s.docente);
-        if (n && n !== normalizar(SIN_DOCENTE) && !nombres.has(n)) { nombres.add(n); lista.push(s.docente.trim()); }
+        if (n && n !== normalizar(SIN_DOCENTE) && !nombres.has(n) && !DESVINCULADOS.map(normalizar).includes(n)) { nombres.add(n); lista.push(s.docente.trim()); }
     });
 
     docentes = lista.map(nombre => {
