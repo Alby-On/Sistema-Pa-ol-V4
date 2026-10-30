@@ -8,9 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2026-10-30c">
+    <link rel="stylesheet" href="styles.css?v=2026-10-30d">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2026-10-30c"></script>
+<script src="supabase.js?v=2026-10-30d"></script>
 </head>
 <body data-modulo="gestor">
 <header class="appbar">
@@ -26,7 +26,17 @@
             <input type="search" id="buscador" placeholder="Buscar por ID, alumno, docente, asignatura o material" oninput="renderizar()" autocomplete="off" aria-label="Buscar solicitudes">
             <kbd class="atajo" title="Atajo de teclado">/</kbd>
         </div>
-        <p class="gestor-sync" id="estadoSync" aria-live="polite">Cargando…</p>
+        <div class="gestor-acciones">
+            <button type="button" class="btn-sm btn-secondary" id="btnPreparacion" onclick="abrirPreparacion()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>
+                Lista de preparación
+            </button>
+            <button type="button" class="btn-sm btn-secondary btn-avisos" id="btnAvisos" onclick="alternarAvisos()" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                <span>Activar avisos</span>
+            </button>
+            <p class="gestor-sync" id="estadoSync" aria-live="polite">Cargando…</p>
+        </div>
         <div class="segmented gestor-tabs" role="tablist" aria-label="Lista">
             <button type="button" class="is-active" data-tab="pendientes" onclick="cambiarPestana('pendientes')">Por entregar <span class="tab-count" id="countPendTab">–</span></button>
             <button type="button" data-tab="entregadas" onclick="cambiarPestana('entregadas')">Sin comentario <span class="tab-count" id="countEntTab">–</span></button>
@@ -50,6 +60,23 @@
         </section>
     </div>
 </main>
+
+<div id="modalPreparacion" class="modal" role="dialog" aria-modal="true" aria-labelledby="tituloPreparacion">
+    <div class="modal-content prep-content">
+        <div class="modal-header">
+            <span id="tituloPreparacion">Lista de preparación</span>
+            <span class="close-btn" onclick="cerrarPreparacion()" role="button" aria-label="Cerrar">×</span>
+        </div>
+        <p class="muted prep-resumen" id="prepResumen">Cargando…</p>
+        <div id="prepCuerpo"></div>
+        <div class="btn-row prep-botones">
+            <button type="button" class="btn-secondary" onclick="cerrarPreparacion()">Cerrar</button>
+            <button type="button" onclick="imprimirPreparacion()">Imprimir</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <div id="commentModal" class="modal">
     <div class="modal-content">
@@ -295,10 +322,12 @@
         document.getElementById('estadoSync').textContent =
             'Actualizado ' + new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
         document.getElementById('estadoSync').classList.remove('is-error');
+        revisarNovedades();
         const firma = JSON.stringify([estado.pendientes, estado.entregadas]);
         if (firma === firmaAnterior) { actualizarTiempos(); return; }
         firmaAnterior = firma;
         renderizar();
+        if (document.getElementById('modalPreparacion').style.display === 'flex') cargarPreparacion();
     }
 
     function coincide(s, q) {
@@ -320,7 +349,7 @@
             ? materiales.map(m => `<li><span>${escapar(m.material)}</span><span class="num">× ${escapar(m.cantidad)}</span></li>`).join('')
             : '<li class="muted">Sin materiales registrados.</li>';
         return `
-        <article class="request-card${atrasada ? ' is-late' : ''}" data-solicitud-id="${s.id}">
+        <article class="request-card${atrasada ? ' is-late' : ''}${resaltadas.has(s.id) ? ' is-new' : ''}" data-solicitud-id="${s.id}">
             <div class="rc-top">
                 <strong class="num">S-${s.id}</strong>
                 <span class="rc-time" data-fecha="${escapar(fechaRef || '')}">${pendiente ? '' : 'entregada '}${hace(fechaRef)}</span>
@@ -388,13 +417,222 @@
     };
     window.renderizar = renderizar;
 
+    /* ==========================================================
+       1) AVISO DE SOLICITUDES NUEVAS
+       - Compara cada actualización con la anterior.
+       - Avisa por solicitudes nuevas y por materiales agregados
+         a una solicitud pendiente.
+       - Sonido + notificación del navegador + aviso en pantalla
+         + número en la pestaña + tarjeta resaltada.
+    ========================================================== */
+    const inicioPagina = Date.now();
+    const conocidas = new Map();          // id -> cantidad de materiales
+    const resaltadas = new Set();
+    let primeraRevision = true;
+    let avisosActivos = false;
+    let pendientesSinVer = 0;
+    let audioCtx = null;
+    const tituloOriginal = document.title;
+
+    try { avisosActivos = localStorage.getItem('gestorAvisos') === '1'; } catch (e) {}
+    actualizarBotonAvisos();
+
+    function revisarNovedades() {
+        const nuevas = [], ampliadas = [];
+        estado.pendientes.datos.forEach(s => {
+            const n = (s.materiales_solicitados || []).length;
+            if (!conocidas.has(s.id)) {
+                // Solo cuenta como nueva si se creó después de abrir el gestor
+                const f = fechaSupabase(s.fecha_solicitud);
+                if (!primeraRevision && f && f.getTime() > inicioPagina - 60000) nuevas.push(s);
+            } else if (n > conocidas.get(s.id)) {
+                ampliadas.push(s);
+            }
+            conocidas.set(s.id, n);
+        });
+        primeraRevision = false;
+        if (!nuevas.length && !ampliadas.length) return;
+
+        [...nuevas, ...ampliadas].forEach(s => {
+            resaltadas.add(s.id);
+            setTimeout(() => { resaltadas.delete(s.id); document.querySelector(`[data-solicitud-id="${s.id}"]`)?.classList.remove('is-new'); }, 60000);
+        });
+        firmaAnterior = '';   // obliga a redibujar con el resaltado
+
+        const nombre = s => s.usuarios?.nombre || 'un alumno';
+        let mensaje;
+        if (nuevas.length === 1 && !ampliadas.length) mensaje = `Nueva solicitud S-${nuevas[0].id} de ${nombre(nuevas[0])}`;
+        else if (!nuevas.length && ampliadas.length === 1) mensaje = `S-${ampliadas[0].id}: ${nombre(ampliadas[0])} agregó materiales`;
+        else mensaje = [nuevas.length && `${nuevas.length} ${nuevas.length === 1 ? 'solicitud nueva' : 'solicitudes nuevas'}`, ampliadas.length && `${ampliadas.length} con materiales agregados`].filter(Boolean).join(' y ');
+
+        mostrarToast(mensaje);
+        if (!document.hasFocus()) {
+            pendientesSinVer += nuevas.length + ampliadas.length;
+            document.title = `(${pendientesSinVer}) ${tituloOriginal}`;
+        }
+        if (avisosActivos) {
+            sonar();
+            if ('Notification' in window && Notification.permission === 'granted' && !document.hasFocus()) {
+                try { new Notification('Pañol — Gestor de solicitudes', { body: mensaje, tag: 'panol-gestor' }); } catch (e) {}
+            }
+        }
+    }
+
+    window.addEventListener('focus', () => { pendientesSinVer = 0; document.title = tituloOriginal; });
+
+    // Dos tonos cortos generados por el navegador (no necesita archivos de audio)
+    function sonar() {
+        try {
+            audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            [[880, 0], [1320, 0.18]].forEach(([frecuencia, inicio]) => {
+                const osc = audioCtx.createOscillator(), gan = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.value = frecuencia;
+                const t = audioCtx.currentTime + inicio;
+                gan.gain.setValueAtTime(0.0001, t);
+                gan.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+                gan.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+                osc.connect(gan).connect(audioCtx.destination);
+                osc.start(t); osc.stop(t + 0.18);
+            });
+        } catch (e) {}
+    }
+    // Los navegadores bloquean el sonido hasta que la persona toca la página
+    document.addEventListener('pointerdown', () => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); });
+
+    window.alternarAvisos = async () => {
+        avisosActivos = !avisosActivos;
+        try { localStorage.setItem('gestorAvisos', avisosActivos ? '1' : '0'); } catch (e) {}
+        if (avisosActivos) {
+            sonar();   // tono de prueba y desbloqueo del sonido
+            if ('Notification' in window && Notification.permission === 'default') {
+                try { await Notification.requestPermission(); } catch (e) {}
+            }
+            mostrarToast('Avisos activados: sonará al llegar una solicitud nueva');
+        } else {
+            mostrarToast('Avisos desactivados');
+        }
+        actualizarBotonAvisos();
+    };
+
+    function actualizarBotonAvisos() {
+        const b = document.getElementById('btnAvisos');
+        b.classList.toggle('is-on', avisosActivos);
+        b.setAttribute('aria-pressed', String(avisosActivos));
+        b.querySelector('span').textContent = avisosActivos ? 'Avisos activados' : 'Activar avisos';
+    }
+
+    let toastTimer = null;
+    function mostrarToast(texto) {
+        const t = document.getElementById('toast');
+        t.textContent = texto;
+        t.hidden = false;
+        t.classList.add('is-visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { t.classList.remove('is-visible'); setTimeout(() => { t.hidden = true; }, 250); }, 6000);
+    }
+
+    /* ==========================================================
+       2) LISTA DE PREPARACIÓN
+       Junta los materiales de TODAS las solicitudes pendientes
+       para sacarlos del pañol de una vez. Se puede imprimir.
+    ========================================================== */
+    const normalizarMat = t => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const marcados = new Set();   // materiales ya preparados (solo en esta pantalla)
+
+    window.abrirPreparacion = () => {
+        document.getElementById('modalPreparacion').style.display = 'flex';
+        cargarPreparacion();
+    };
+    window.cerrarPreparacion = () => { document.getElementById('modalPreparacion').style.display = 'none'; };
+    window.imprimirPreparacion = () => {
+        const detalle = document.querySelector('.prep-detalle');
+        const estabaAbierto = detalle ? detalle.open : false;
+        if (detalle) detalle.open = true;   // en papel se incluye el detalle por solicitud
+        document.body.classList.add('imprimiendo-lista');
+        window.print();
+        setTimeout(() => {
+            document.body.classList.remove('imprimiendo-lista');
+            if (detalle) detalle.open = estabaAbierto;
+        }, 500);
+    };
+
+    async function cargarPreparacion() {
+        const resumen = document.getElementById('prepResumen');
+        const cuerpo = document.getElementById('prepCuerpo');
+        let pendientes = [];
+        try {
+            for (let desde = 0; ; desde += 1000) {
+                const { data, error } = await supabaseClient
+                    .from('solicitudes')
+                    .select('id, fecha_solicitud, materiales_solicitados (material, cantidad), usuarios (nombre)')
+                    .neq('estado', 'Entregado')
+                    .order('fecha_solicitud', { ascending: true })
+                    .range(desde, desde + 999);
+                if (error) throw error;
+                pendientes.push(...(data || []));
+                if (!data || data.length < 1000) break;
+            }
+        } catch (e) {
+            console.error(e);
+            resumen.textContent = 'No se pudo cargar la lista. Intenta de nuevo.';
+            return;
+        }
+
+        const grupos = {};
+        pendientes.forEach(s => (s.materiales_solicitados || []).forEach(m => {
+            const clave = normalizarMat(m.material);
+            if (!clave) return;
+            const g = grupos[clave] ||= { clave, nombres: {}, total: 0, solicitudes: [] };
+            const cant = Number(m.cantidad) || 0;
+            g.total += cant;
+            g.nombres[m.material.trim()] = (g.nombres[m.material.trim()] || 0) + 1;
+            g.solicitudes.push({ id: s.id, cant });
+        }));
+        const lista = Object.values(grupos)
+            .map(g => ({ ...g, nombre: Object.entries(g.nombres).sort((a, b) => b[1] - a[1])[0][0] }))
+            .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+        const unidades = lista.reduce((t, g) => t + g.total, 0);
+        const ahora = new Date().toLocaleString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+        resumen.textContent = pendientes.length
+            ? `${pendientes.length} ${pendientes.length === 1 ? 'solicitud pendiente' : 'solicitudes pendientes'} · ${lista.length} materiales distintos · ${unidades.toLocaleString('es-CL')} unidades · ${ahora}`
+            : 'No hay solicitudes pendientes.';
+        if (!lista.length) { cuerpo.innerHTML = '<p class="empty-state">Nada que preparar por ahora.</p>'; return; }
+
+        cuerpo.innerHTML = `
+            <table class="prep-tabla">
+                <thead><tr><th class="prep-check"><span class="sr-only">Listo</span></th><th>Material</th><th class="prep-num">Cant.</th><th class="prep-refs">Solicitudes</th></tr></thead>
+                <tbody>${lista.map(g => `
+                    <tr class="${marcados.has(g.clave) ? 'is-done' : ''}">
+                        <td class="prep-check"><input type="checkbox" aria-label="Preparado: ${escapar(g.nombre)}" data-clave="${escapar(g.clave)}" ${marcados.has(g.clave) ? 'checked' : ''}></td>
+                        <td>${escapar(g.nombre)}</td>
+                        <td class="prep-num num">${g.total}</td>
+                        <td class="prep-refs num">${g.solicitudes.map(x => `S-${x.id}${x.cant > 1 ? ` (${x.cant})` : ''}`).join(', ')}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+            <details class="prep-detalle">
+                <summary>Ver por solicitud</summary>
+                <ul>${pendientes.map(s => `
+                    <li><b class="num">S-${s.id}</b> · ${escapar(s.usuarios?.nombre || 'Desconocido')}:
+                        ${(s.materiales_solicitados || []).map(m => `${escapar(m.material)} × ${escapar(m.cantidad)}`).join(', ') || 'sin materiales'}</li>`).join('')}
+                </ul>
+            </details>`;
+        cuerpo.querySelectorAll('input[type=checkbox][data-clave]').forEach(c => c.addEventListener('change', () => {
+            c.checked ? marcados.add(c.dataset.clave) : marcados.delete(c.dataset.clave);
+            c.closest('tr').classList.toggle('is-done', c.checked);
+        }));
+    }
+
     // Atajos de teclado (computador): "/" busca, "Esc" limpia la búsqueda o cierra el comentario
     document.addEventListener('keydown', (e) => {
         const buscador = document.getElementById('buscador');
         const escribiendo = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
         if (e.key === '/' && !escribiendo) { e.preventDefault(); buscador.focus(); buscador.select(); }
         if (e.key === 'Escape') {
-            if (document.getElementById('commentModal').style.display === 'flex') cerrarFormulario();
+            if (document.getElementById('modalPreparacion').style.display === 'flex') cerrarPreparacion();
+            else if (document.getElementById('commentModal').style.display === 'flex') cerrarFormulario();
             else if (document.activeElement === buscador && buscador.value) { buscador.value = ''; renderizar(); }
         }
     });
